@@ -1,0 +1,24 @@
+{
+    "name": "CMTAT-Ligo",
+    "version": "1.0.0",
+    "main": "./lib/main.mligo",
+    "description": "CMTA token",
+    "directories": {
+        "lib": "lib",
+        "test": "test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ligolang/CMTAT-Ligo.git"
+    },
+    "keywords": ["ligo", "tezos", "FA2"],
+    "author": "Frank Hillard <frank.hillard@gmail.com>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/ligolang/CMTAT-Ligo/issues"
+    },
+    "homepage": "https://github.com/ligolang/CMTAT-Ligo",
+    "dependencies": {
+        "@ligo/fa": "^1.1.1"
+    }
+}
