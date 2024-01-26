@@ -22,6 +22,7 @@ compile: ## compile contracts
 	@if [ ! -d ./compiled ]; then mkdir -p ./compiled/cmtat/nft && mkdir -p ./compiled/cmtat/asset ; fi
 	@echo "Compiling contracts..."
 	@$(call compile,cmtat/asset/cmtat_single_asset.impl.mligo,cmtat/asset/cmtat_single_asset.impl.mligo.tz)
+	@$(call compile,../test/cmtat/extended_cmtat_single_asset.instance.mligo,cmtat/extended_cmtat_single_asset.mligo.tz)
 # @$(call compile,fa2/asset/single_asset.impl.mligo,fa2/asset/single_asset.impl.mligo.json,--michelson-format json)
 # @$(call compile,fa2/asset/multi_asset.impl.mligo,fa2/asset/multi_asset.impl.mligo.tz)
 # @$(call compile,fa2/asset/multi_asset.impl.mligo,fa2/asset/multi_asset.impl.mligo.json,--michelson-format json)

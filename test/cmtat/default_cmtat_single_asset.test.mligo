@@ -65,6 +65,7 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       metadata       = metadata;
       token_metadata = token_metadata;
       operators      = operators;
+      administration = { admin = owner1; paused = false };
   } in
 
   initial_storage, owners, ops
