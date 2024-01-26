@@ -66,6 +66,8 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       token_metadata = token_metadata;
       operators      = operators;
       administration = { admin = owner1; paused = false };
+      totalsupplies  = a + b + c;
+      authorizations = Big_map.empty;
   } in
 
   initial_storage, owners, ops
@@ -110,4 +112,36 @@ let test_atomic_transfer_success =
 
   let _ = Test.transfer_exn orig.addr (Transfer transfer_requests) 0tez in
   let () = assert_balances orig.addr ((owner1, 8n), (owner2, 7n), (owner3, 15n)) in
+  ()
+
+let test_mint_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param) in
+  let () = Test.set_source owner1 in
+  let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
+  let () = assert_balances orig.addr ((owner1, 12n), (owner2, 10n), (owner3, 10n)) in
+  ()
+
+
+let test_burn_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let () = Test.set_source owner1 in
+  let burn_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.burn_param) in
+  let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
+  let () = assert_balances orig.addr ((owner1, 8n), (owner2, 10n), (owner3, 10n)) in
   ()

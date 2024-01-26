@@ -49,7 +49,9 @@ install: ## install dependencies
 test: ## run tests (SUITE=permit make test)
 ifndef SUITE
 	@$(call test,cmtat/default_cmtat_single_asset.test.mligo)
+	@$(call test,cmtat/extended_cmtat_single_asset.fa2.test.mligo)
 	@$(call test,cmtat/extended_cmtat_single_asset.test.mligo)
+
 # @$(call test,fa2/single_asset_jsligo.test.mligo)
 # @$(call test,fa2/multi_asset.test.mligo)
 # @$(call test,fa2/nft/nft.test.mligo)

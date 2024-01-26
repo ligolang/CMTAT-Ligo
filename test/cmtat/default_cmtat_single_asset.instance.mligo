@@ -14,7 +14,9 @@ let lift (s : storage) : unit Token.CmtatSingleAssetExtendable.storage =
    operators = s.operators;
    token_metadata = s.token_metadata;
    metadata = s.metadata;
-   administration = s.administration
+   administration = s.administration;
+   totalsupplies = s.totalsupplies;
+   authorizations = s.authorizations;
   }
 
 [@inline]
@@ -26,7 +28,9 @@ let unlift (ret : operation list * unit Token.CmtatSingleAssetExtendable.storage
    operators = s.operators;
    token_metadata = s.token_metadata;
    metadata = s.metadata;
-   administration = s.administration
+   administration = s.administration;
+   totalsupplies = s.totalsupplies;
+   authorizations = s.authorizations
   }
 
 [@entry]
@@ -65,3 +69,11 @@ let transfer (t : Token.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZI
 [@entry]
 let pause (t : Token.ADMINISTRATION.pause_param) (s : storage) : ret =
   unlift (Token.CmtatSingleAssetExtendable.pause t (lift s))
+
+[@entry]
+let mint (p: Token.CmtatSingleAssetExtendable.mint_param) (s: storage) : ret =
+  unlift (Token.CmtatSingleAssetExtendable.mint p (lift s))
+
+[@entry]
+let burn (p: Token.CmtatSingleAssetExtendable.mint_param) (s: storage) : ret =
+  unlift (Token.CmtatSingleAssetExtendable.burn p (lift s))

@@ -1,6 +1,8 @@
 
 #import "./extendable_cmtat_single_asset.impl.mligo" "CmtatSingleAssetExtendable"
 #import "../modules/administration.mligo" "ADMINISTRATION"
+#import "../modules/single_asset/totalsupply.mligo" "TOTALSUPPLY"
+#import "../modules/authorizations.mligo" "AUTHORIZATIONS"
 
 type ledger = CmtatSingleAssetExtendable.ledger
 
@@ -13,11 +15,13 @@ type storage = unit CmtatSingleAssetExtendable.storage
 
 type storage =
 {
-    administration : ADMINISTRATION.t;
-   ledger : ledger;
-   operators : operators;
-   token_metadata : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.tokenMetadata;
-   metadata : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP16.metadata;
+  administration : ADMINISTRATION.t;
+  totalsupplies: TOTALSUPPLY.t;
+  authorizations: AUTHORIZATIONS.t;
+  ledger : ledger;
+  operators : operators;
+  token_metadata : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.tokenMetadata;
+  metadata : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP16.metadata;
 }
 
 type ret = operation list * storage
@@ -25,22 +29,26 @@ type ret = operation list * storage
 let empty_storage (admin, paused: address * bool): storage =
   {
     administration = { admin=admin; paused=paused };
-   ledger = Big_map.empty;
-   operators = Big_map.empty;
-   token_metadata = Big_map.empty;
-   metadata = Big_map.empty
+    totalsupplies = 0n;
+    authorizations = Big_map.empty;
+    ledger = Big_map.empty;
+    operators = Big_map.empty;
+    token_metadata = Big_map.empty;
+    metadata = Big_map.empty
   }
 
 [@inline]
 let lift (s : storage) : unit CmtatSingleAssetExtendable.storage =
-  {
-    administration = s.administration;
-   extension = ();
-   ledger = s.ledger;
-   operators = s.operators;
-   token_metadata = s.token_metadata;
-   metadata = s.metadata
-  }
+{
+  administration = s.administration;
+  totalsupplies = s.totalsupplies;
+  authorizations = s.authorizations;
+  extension = ();
+  ledger = s.ledger;
+  operators = s.operators;
+  token_metadata = s.token_metadata;
+  metadata = s.metadata
+}
 
 [@inline]
 let unlift (ret : operation list * unit CmtatSingleAssetExtendable.storage) : ret =
@@ -51,7 +59,9 @@ let unlift (ret : operation list * unit CmtatSingleAssetExtendable.storage) : re
    operators = s.operators;
    token_metadata = s.token_metadata;
    metadata = s.metadata;
-   administration = s.administration
+   administration = s.administration;
+   totalsupplies = s.totalsupplies;
+   authorizations = s.authorizations;
   }
 
 [@entry]
