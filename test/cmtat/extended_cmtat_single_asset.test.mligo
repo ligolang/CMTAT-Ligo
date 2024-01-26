@@ -1,5 +1,9 @@
 #import "extended_cmtat_single_asset.instance.mligo" "CMTAT_single_asset"
 #import "../helpers/list.mligo" "List_helper"
+#import "../helpers/totalsupply_view_caller_contract.mligo" "Caller"
+#import "../helpers/isoperator_view_caller_contract.mligo" "Caller_ISOPERATOR"
+#import "../helpers/tokenmetadata_view_caller_contract.mligo" "Caller_TOKENMETADATA"
+
 
 
 let get_initial_storage (a, b, c : nat * nat * nat) =
@@ -275,6 +279,104 @@ let test_atomic_transfer_failure_in_pause =
   let r = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
   let () = string_failure r CMTAT_single_asset.Token.ADMINISTRATION.Errors.contract_in_pause in
   ()
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//                        TOTALSUPPLY VIEW
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let test_totalsupply_view_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  // ORIGINATION CALLER
+  let () = Test.set_source op1 in
+  let orig_caller = Test.originate (contract_of Caller) 0n 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let contr = Test.to_contract orig.addr in 
+  let fa2_address : address = Tezos.address contr in
+  // MINT (with admin)
+  let () = Test.set_source initial_storage.administration.admin in
+  let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param)
+  in
+  let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
+  let () = assert_balances orig.addr ((owner1, 12n), (owner2, 10n), (owner3, 10n)) in
+  let () = assert_totalsupply orig.addr 32n in
+
+  // Call View of Caller contract
+ // Caller contract calls the "totalSupply" view of CMTAT contract
+  let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address,0n)) 0tez in
+  let storage_caller = Test.get_storage orig_caller.addr in
+  let () = assert(storage_caller = 32n) in
+  ()
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//                        IS_OPERATOR VIEW
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let test_isoperator_view_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  // ORIGINATION CALLER
+  let () = Test.set_source op1 in
+  let orig_caller = Test.originate (contract_of Caller_ISOPERATOR) (None: bool option) 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let contr = Test.to_contract orig.addr in 
+  let fa2_address : address = Tezos.address contr in
+
+  // Call View of Caller contract
+ // Caller contract calls the "is_opertor" view of CMTAT contract
+  let op_request : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.operator = { owner=owner1; operator=op1; token_id=0n } in
+  let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, op_request)) 0tez in
+  let storage_caller = Test.get_storage orig_caller.addr in
+  let () = assert(storage_caller = Some(true)) in
+  ()
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//                        TOKEN_METADATA VIEW
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+type tokenMetadataData = CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.tokenMetadataData
+
+let test_tokenmetadata_view_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  // ORIGINATION CALLER
+  let () = Test.set_source op1 in
+  let orig_caller = Test.originate (contract_of Caller_TOKENMETADATA) (None: tokenMetadataData option) 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let contr = Test.to_contract orig.addr in 
+  let fa2_address : address = Tezos.address contr in
+
+  // Call View of Caller contract
+ // Caller contract calls the "is_opertor" view of CMTAT contract
+  // let op_request : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.operator = { owner=owner1; operator=op1; token_id=0n } in
+  let r = Test.transfer_to_contract contr_caller (Request (fa2_address, 0n)) 0tez in
+  let storage_caller = Test.get_storage orig_caller.addr in
+  match storage_caller with
+  | Some(data) -> 
+    let () = assert (data.token_id=0n) in
+    let () = assert (data.token_info=(Map.empty : (string, bytes) map)) in
+    ()
+  | None -> failwith "[Test] missing token_metadata"
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

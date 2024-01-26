@@ -42,14 +42,97 @@ let transfer (type a) (t : FA2.SingleAssetExtendable.TZIP12.transfer) (s : a sto
         metadata = new_storage.metadata;
     }
 
+let balance_of (type a) (b : FA2.SingleAssetExtendable.TZIP12.balance_of) (s : a storage) : a ret =
+    let sub_fa2_storage = {
+        ledger=s.ledger; 
+        operators=s.operators;
+        token_metadata=s.token_metadata;
+        metadata=s.metadata;
+        extension=s.extension;
+    } in
+    let ops, new_storage = FA2.SingleAssetExtendable.balance_of b sub_fa2_storage in
+    ops, {s with 
+        ledger = new_storage.ledger;
+        operators = new_storage.operators;
+        token_metadata = new_storage.token_metadata;
+        metadata = new_storage.metadata;
+    }
+
+let update_operators (type a) (updates : FA2.SingleAssetExtendable.TZIP12.update_operators) (s : a storage) : a ret =
+   let sub_fa2_storage = {
+        ledger=s.ledger; 
+        operators=s.operators;
+        token_metadata=s.token_metadata;
+        metadata=s.metadata;
+        extension=s.extension;
+    } in
+    let ops, new_storage = FA2.SingleAssetExtendable.update_operators updates sub_fa2_storage in
+    ops, {s with 
+        ledger = new_storage.ledger;
+        operators = new_storage.operators;
+        token_metadata = new_storage.token_metadata;
+        metadata = new_storage.metadata;
+    }
+
+let get_balance (type a) (p : (address * nat)) (s : a storage) : nat =
+       let sub_fa2_storage = {
+        ledger=s.ledger; 
+        operators=s.operators;
+        token_metadata=s.token_metadata;
+        metadata=s.metadata;
+        extension=s.extension;
+    } in
+    FA2.SingleAssetExtendable.get_balance p sub_fa2_storage
+
+let total_supply (type a) (_token_id : nat) (s : a storage) : nat =
+    //    let sub_fa2_storage = {
+    //     ledger=s.ledger; 
+    //     operators=s.operators;
+    //     token_metadata=s.token_metadata;
+    //     metadata=s.metadata;
+    //     extension=s.extension;
+    // } in
+    TOTALSUPPLY.get_total_supply s.totalsupplies
+    // FA2.SingleAssetExtendable.total_supply token_id sub_fa2_storage
+
+let all_tokens (type a) (_ : unit) (s : a storage) : nat set =
+       let sub_fa2_storage = {
+        ledger=s.ledger; 
+        operators=s.operators;
+        token_metadata=s.token_metadata;
+        metadata=s.metadata;
+        extension=s.extension;
+    } in
+    FA2.SingleAssetExtendable.all_tokens () sub_fa2_storage
+
+let is_operator (type a) (op : FA2.SingleAssetExtendable.TZIP12.operator) (s : a storage) : bool =
+       let sub_fa2_storage = {
+        ledger=s.ledger; 
+        operators=s.operators;
+        token_metadata=s.token_metadata;
+        metadata=s.metadata;
+        extension=s.extension;
+    } in
+    FA2.SingleAssetExtendable.is_operator op sub_fa2_storage
+
+let token_metadata (type a) (p : nat) (s : a storage) : FA2.SingleAssetExtendable.TZIP12.tokenMetadataData =
+       let sub_fa2_storage = {
+        ledger=s.ledger; 
+        operators=s.operators;
+        token_metadata=s.token_metadata;
+        metadata=s.metadata;
+        extension=s.extension;
+    } in
+    FA2.SingleAssetExtendable.token_metadata p sub_fa2_storage
+
+
+
+
+
 let pause (type a) (p: ADMINISTRATION.pause_param) (s: a storage) : a ret =
     let sender = Tezos.get_sender() in
     let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, PAUSER) s.authorizations)) AUTHORIZATIONS.Errors.not_pauser in
     [], { s with administration = ADMINISTRATION.pause p s.administration }
-
-// [@entry]
-// let transfer (t : FA2.SingleAssetExtendable.TZIP12.transfer) (s : storage) : ret =
-//   unlift (FA2.SingleAssetExtendable.transfer t (lift s))
 
 
 // TODO
