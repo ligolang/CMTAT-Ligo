@@ -57,3 +57,20 @@ let pause (p : Token.ADMINISTRATION.pause_param) (s : storage) : ret =
   let sender = Tezos.get_sender() in
   let () = assert_with_error ((sender = s.extension.issuer) || (sender = s.administration.admin)) Errors.not_issuer_nor_admin in
   [], { s with administration = Token.ADMINISTRATION.pause p s.administration }
+
+
+[@entry]
+let mint (p: Token.mint_param) (s: storage) : ret =
+  Token.mint p s
+
+[@entry]
+let burn (p: Token.burn_param) (s: storage) : ret =
+  Token.burn p s
+
+[@entry]
+let grantRole (p: address * Token.AUTHORIZATIONS.role) (s: storage) : ret =
+  Token.grantRole p s
+
+[@entry]
+let revokeRole (p: address * Token.AUTHORIZATIONS.role) (s: storage) : ret =
+  Token.revokeRole p s
