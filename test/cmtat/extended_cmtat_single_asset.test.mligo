@@ -72,6 +72,13 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       administration = { admin = op1; paused = false };
       totalsupplies  = a + b + c; //Big_map.literal([(0n, a + b + c)]);
       authorizations = Big_map.empty;
+      snapshots = {
+        account_snapshots = Big_map.empty;
+        totalsupply_snapshots = Map.empty;
+        current_snapshot_time = ("1970-01-01t00:00:00Z" : timestamp);
+        current_snapshot_index = 0n;
+        scheduled_snapshots = ([] : timestamp list)
+      };
       extension = {
         issuer = op2;
       }
@@ -140,6 +147,34 @@ let assert_no_role
     match Big_map.find_opt user storage.authorizations with
     | Some(_flags) -> failwith "[assert_no_role] User should not have role"
     | None -> ()
+
+
+let assert_snapshot
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  (a, b, c : (address * nat) * (address * nat) * (address * nat)) =
+    let storage = Test.get_storage contract_address in
+    let () = match Big_map.find_opt a.0 storage.snapshots.account_snapshots with
+    | Some(v) -> assert(a.1 = v)
+    | None -> failwith "[assert_snapshot] user 1 has no snapshot"
+    in
+    let () = match Big_map.find_opt b.0 storage.snapshots.account_snapshots with
+    | Some(v) -> assert(b.1 = v)
+    | None -> failwith "[assert_snapshot] user 2 has no snapshot"
+    in
+    let () = match Big_map.find_opt c.0 storage.snapshots.account_snapshots with
+    | Some(v) -> assert(c.1 = v)
+    | None -> failwith "[assert_snapshot] user 3 has no snapshot"
+    in
+    ()
+
+let assert_scheduled_snapshot
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  (time: timestamp) = 
+    let storage = Test.get_storage contract_address in
+    let () = assert (List_helper.find_opt time storage.snapshots.scheduled_snapshots)
+    in
+    ()
+
 
 (* Assert contract call results in failwith with given string *)
 let string_failure (res : test_exec_result) (expected : string) : unit =
@@ -368,7 +403,6 @@ let test_tokenmetadata_view_success =
 
   // Call View of Caller contract
  // Caller contract calls the "is_opertor" view of CMTAT contract
-  // let op_request : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.operator = { owner=owner1; operator=op1; token_id=0n } in
   let r = Test.transfer_to_contract contr_caller (Request (fa2_address, 0n)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
   match storage_caller with
@@ -634,4 +668,29 @@ let test_revoke_role_failure_missing_role =
   let r = Test.transfer_to_contract contr (RevokeRole (owner1, flag_burner)) 0tez in
   let () = string_failure r CMTAT_single_asset.Token.AUTHORIZATIONS.Errors.missing_role in 
   let () = assert_role addr owner1 flag_minter in
+  ()
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//          SNAPSHOTS
+////////////////////////////////////////////////////////////////////////////////
+
+let test_schedule_snapshot_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let transfer_requests = ([
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
+  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+  in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
   ()

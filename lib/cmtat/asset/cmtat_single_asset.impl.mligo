@@ -3,6 +3,7 @@
 #import "../modules/administration.mligo" "ADMINISTRATION"
 #import "../modules/single_asset/totalsupply.mligo" "TOTALSUPPLY"
 #import "../modules/authorizations.mligo" "AUTHORIZATIONS"
+#import "../modules/snapshots.mligo" "SNAPSHOTS"
 
 type ledger = CmtatSingleAssetExtendable.ledger
 
@@ -18,6 +19,7 @@ type storage =
   administration : ADMINISTRATION.t;
   totalsupplies: TOTALSUPPLY.t;
   authorizations: AUTHORIZATIONS.t;
+  snapshots: SNAPSHOTS.t;
   ledger : ledger;
   operators : operators;
   token_metadata : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.tokenMetadata;
@@ -31,6 +33,14 @@ let empty_storage (admin, paused: address * bool): storage =
     administration = { admin=admin; paused=paused };
     totalsupplies = 0n;
     authorizations = Big_map.empty;
+    snapshots = 
+    {
+      account_snapshots = (Big_map.empty : (address, SNAPSHOTS.snapshots) big_map);
+      totalsupply_snapshots = (Map.empty : SNAPSHOTS.snapshots);
+      current_snapshot_time = ("1970-01-01t00:00:00Z" : timestamp);
+      current_snapshot_index = 0n;
+      scheduled_snapshots = ([] : timestamp list)
+    };
     ledger = Big_map.empty;
     operators = Big_map.empty;
     token_metadata = Big_map.empty;
@@ -43,6 +53,7 @@ let lift (s : storage) : unit CmtatSingleAssetExtendable.storage =
   administration = s.administration;
   totalsupplies = s.totalsupplies;
   authorizations = s.authorizations;
+  snapshots = s.snapshots;
   extension = ();
   ledger = s.ledger;
   operators = s.operators;
@@ -62,6 +73,7 @@ let unlift (ret : operation list * unit CmtatSingleAssetExtendable.storage) : re
    administration = s.administration;
    totalsupplies = s.totalsupplies;
    authorizations = s.authorizations;
+   snapshots = s.snapshots;
   }
 
 [@entry]

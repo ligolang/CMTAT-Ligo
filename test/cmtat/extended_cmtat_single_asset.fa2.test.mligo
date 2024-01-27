@@ -69,6 +69,13 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       administration = { admin = op1; paused = false };
       totalsupplies  = a + b + c; //Big_map.literal([(0n, a + b + c)]);
       authorizations = Big_map.empty;
+      snapshots = {
+        account_snapshots = Big_map.empty;
+        totalsupply_snapshots = Map.empty;
+        current_snapshot_time = ("1970-01-01t00:00:00Z" : timestamp);
+        current_snapshot_index = 0n;
+        scheduled_snapshots = ([] : timestamp list)
+      };
       extension = {
         issuer = op2;
       }

@@ -17,6 +17,7 @@ let lift (s : storage) : unit Token.CmtatSingleAssetExtendable.storage =
    administration = s.administration;
    totalsupplies = s.totalsupplies;
    authorizations = s.authorizations;
+   snapshots = s.snapshots;
   }
 
 [@inline]
@@ -30,7 +31,8 @@ let unlift (ret : operation list * unit Token.CmtatSingleAssetExtendable.storage
    metadata = s.metadata;
    administration = s.administration;
    totalsupplies = s.totalsupplies;
-   authorizations = s.authorizations
+   authorizations = s.authorizations;
+   snapshots = s.snapshots;
   }
 
 [@entry]

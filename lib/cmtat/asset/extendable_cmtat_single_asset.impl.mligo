@@ -3,6 +3,7 @@
 #import "../modules/administration.mligo" "ADMINISTRATION"
 #import "../modules/single_asset/totalsupply.mligo" "TOTALSUPPLY"
 #import "../modules/authorizations.mligo" "AUTHORIZATIONS"
+#import "../modules/snapshots.mligo" "SNAPSHOTS"
 
 type ledger = FA2.SingleAssetExtendable.ledger
 
@@ -19,6 +20,7 @@ type 'a storage =
     administration : ADMINISTRATION.t;
     totalsupplies: TOTALSUPPLY.t;
     authorizations: AUTHORIZATIONS.t;
+    snapshots: SNAPSHOTS.t;
     extension : 'a
 }
 

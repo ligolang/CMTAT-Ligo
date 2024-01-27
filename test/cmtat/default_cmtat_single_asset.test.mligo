@@ -68,6 +68,13 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       administration = { admin = owner1; paused = false };
       totalsupplies  = a + b + c;
       authorizations = Big_map.empty;
+      snapshots = {
+        account_snapshots = Big_map.empty;
+        totalsupply_snapshots = Map.empty;
+        current_snapshot_time = ("1970-01-01t00:00:00Z" : timestamp);
+        current_snapshot_index = 0n;
+        scheduled_snapshots = ([] : timestamp list)
+      };
   } in
 
   initial_storage, owners, ops
