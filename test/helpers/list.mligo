@@ -9,3 +9,8 @@ let nth_exn (type a) (i: int) (a: a list) : a =
       else aux tl (cur + 1)
   in
   aux a 0  
+
+let contains (type a) (value: a) (lst: a list) : bool =
+  let retrieve (acc, elt: (a * bool) * a) = value, (acc.1 || (Test.equal elt acc.0)) in  
+  let _v, result = List.fold retrieve lst (value, false) in
+  result

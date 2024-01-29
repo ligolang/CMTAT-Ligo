@@ -73,3 +73,7 @@ let grantRole (p: address * Token.AUTHORIZATIONS.role) (s: storage) : ret =
 [@entry]
 let revokeRole (p: address * Token.AUTHORIZATIONS.role) (s: storage) : ret =
   Token.revokeRole p s
+
+[@entry]
+let scheduleSnapshot (p: timestamp) (s: storage) : ret =
+  Token.scheduleSnapshot p s

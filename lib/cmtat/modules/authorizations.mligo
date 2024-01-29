@@ -1,4 +1,4 @@
-type role = MINTER | BURNER | PAUSER | RULER | FREEZER | SNAPSHO0TER
+type role = MINTER | BURNER | PAUSER | RULER | FREEZER | SNAPSHOOTER
 
 type t = (address, role set) big_map
 
