@@ -23,6 +23,9 @@ module Errors = struct
     let already_scheduled = "This snapshot time is already scheduled"
     let rescheduled_after_next = "New scheduled is after next scheduled"
     let rescheduled_before_previous = "New scheduled is before previous scheduled"
+    let snapshot_already_done = "Snapshot already done"
+    let no_snapshot_scheduled = "No scheduled snapshot"
+    let snapshot_not_found = "Snapshot not found"
 end
 
 // TODO
@@ -30,6 +33,10 @@ end
 let reverse (type a) (xs : a list) : a list =
     let f (ys,x : (a list * a)) : a list = x :: ys in
     List.fold_left f ([] : a list) xs
+
+let get_for_user_curried (ledger, owner: FA2.SingleAssetExtendable.ledger * address) = 
+    FA2.SingleAssetExtendable.get_for_user ledger owner
+
 
 let scheduleSnapshot (proposed : timestamp) (snapshots:t) : t =
     // check if in the past
@@ -77,6 +84,7 @@ let rescheduleSnapshot (old_time : timestamp) (new_time : timestamp) (snapshots:
             else
                 ()
         in
+        // verify lower bound and upper bound for each element of the list (except last one)
         let replace (acc, elt: timestamp list * timestamp) =
             match acc with
                 | [] -> elt :: []
@@ -107,7 +115,39 @@ let rescheduleSnapshot (old_time : timestamp) (new_time : timestamp) (snapshots:
     in
     { snapshots with scheduled_snapshots = new_scheduled }
 
+let unscheduleSnapshot (time : timestamp) (snapshots:t) : t =
+    // assert not in the past
+    let () = assert_with_error (time > Tezos.get_now()) Errors.snapshot_already_done in
+    // remove first element
+    let new_scheduled_snapshots = match snapshots.scheduled_snapshots with
+    | [] -> failwith Errors.no_snapshot_scheduled
+    | hd::tl -> if (hd = time) then tl else failwith Errors.snapshot_not_found
+    in 
+    { snapshots with scheduled_snapshots = new_scheduled_snapshots }
 
+let getNextSnapshots (snapshots:t) : timestamp list =
+    let filter_past (acc, elt: timestamp list * timestamp) = if (elt > Tezos.get_now()) then elt :: acc else acc in
+    List.fold filter_past snapshots.scheduled_snapshots ([] : timestamp list)
+
+// If there is a scheduled snapshot for the given time returns totalsupply of the snapshot otherwise returns the current totalsupply
+let snapshotTotalsupply (time : timestamp) (_token_id: nat) (totalsupplies: TOTALSUPPLY.t)  (snapshots:t) : nat =
+    match Map.find_opt time snapshots.totalsupply_snapshots with
+    | None -> totalsupplies
+    | Some(v) -> v
+
+// If there is a scheduled snapshot for the given time returns balance of the snapshot otherwise returns the current user balance
+let snapshotBalanceOf (time : timestamp) (user: address) (_token_id: nat) (ledger: FA2.SingleAssetExtendable.ledger) (snapshots:t) : nat =
+    match Big_map.find_opt user snapshots.account_snapshots with
+    | None -> get_for_user_curried(ledger, user)
+    | Some(snaps) -> 
+        let value = match Map.find_opt time snaps with
+        | None -> get_for_user_curried(ledger, user)
+        | Some (v) -> v
+        in value
+
+////////////////////////////////////////////////////////////////////////////////////////
+//                          UPDATE
+////////////////////////////////////////////////////////////////////////////////////////
 let update_account_snapshot (current_scheduled_snapshot: timestamp) (account: address) (account_balance: nat) (snapshots: t) : t = 
     let new_account_snapshots = match Big_map.find_opt account snapshots.account_snapshots with
     | Some(snaps) -> 
@@ -130,9 +170,6 @@ let get_current_scheduled_snapshot (snapshots:t) : timestamp option =
     in
     List.fold get_current snapshots.scheduled_snapshots (None: timestamp option)
 
-
-let get_for_user_curried (ledger, owner: FA2.SingleAssetExtendable.ledger * address) = 
-    FA2.SingleAssetExtendable.get_for_user ledger owner
 
 let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2.SingleAssetExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots: t) : t =
     let (from_, to_, amt, _token_id) = tr in

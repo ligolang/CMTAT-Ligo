@@ -199,3 +199,17 @@ let rescheduleSnapshot (type a) (p: timestamp * timestamp) (s: a storage) : a re
     let sender = Tezos.get_sender() in
     let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
     [], { s with snapshots = SNAPSHOTS.rescheduleSnapshot p.0 p.1 s.snapshots }
+
+let unscheduleSnapshot (type a) (p: timestamp) (s: a storage) : a ret =
+    let sender = Tezos.get_sender() in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
+    [], { s with snapshots = SNAPSHOTS.unscheduleSnapshot p s.snapshots }
+
+let getNextSnapshots (type a) (s: a storage) : timestamp list =
+    SNAPSHOTS.getNextSnapshots s.snapshots
+
+let snapshotTotalsupply (type a) (p: timestamp * nat) (s: a storage) : nat =
+    SNAPSHOTS.snapshotTotalsupply p.0 p.1 s.totalsupplies s.snapshots
+
+let snapshotBalanceOf (type a) (p: timestamp * address * nat) (s: a storage) : nat =
+    SNAPSHOTS.snapshotBalanceOf p.0 p.1 p.2 s.ledger s.snapshots
