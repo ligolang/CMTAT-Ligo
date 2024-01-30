@@ -77,8 +77,6 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       snapshots = {
         account_snapshots = Big_map.empty;
         totalsupply_snapshots = Map.empty;
-        current_snapshot_time = ("1970-01-01t00:00:00Z" : timestamp);
-        current_snapshot_index = 0n;
         scheduled_snapshots = ([] : timestamp list)
       };
       extension = {
@@ -754,11 +752,11 @@ let test_transfer_with_scheduled_snapshot_success =
   let op1    = List_helper.nth_exn 0 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
-
+  // SCHEDULE SNAPSHOT
   let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
   let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
-
+  // TRANSFER
   let transfer_requests = ([
     ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
     ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});

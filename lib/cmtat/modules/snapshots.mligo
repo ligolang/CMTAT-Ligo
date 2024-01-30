@@ -12,8 +12,6 @@ type snapshots = (timestamp, snapshot_data) map
 type t = {
     account_snapshots : (address, snapshots) big_map;
     totalsupply_snapshots : snapshots;
-    current_snapshot_time : timestamp;
-    current_snapshot_index : nat;
     scheduled_snapshots : timestamp list
 }
 

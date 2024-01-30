@@ -37,8 +37,6 @@ let empty_storage (admin, paused: address * bool): storage =
     {
       account_snapshots = (Big_map.empty : (address, SNAPSHOTS.snapshots) big_map);
       totalsupply_snapshots = (Map.empty : SNAPSHOTS.snapshots);
-      current_snapshot_time = ("1970-01-01t00:00:00Z" : timestamp);
-      current_snapshot_index = 0n;
       scheduled_snapshots = ([] : timestamp list)
     };
     ledger = Big_map.empty;
