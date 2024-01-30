@@ -194,3 +194,8 @@ let scheduleSnapshot (type a) (p: timestamp) (s: a storage) : a ret =
     let sender = Tezos.get_sender() in
     let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
     [], { s with snapshots = SNAPSHOTS.scheduleSnapshot p s.snapshots }
+
+let rescheduleSnapshot (type a) (p: timestamp * timestamp) (s: a storage) : a ret =
+    let sender = Tezos.get_sender() in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
+    [], { s with snapshots = SNAPSHOTS.rescheduleSnapshot p.0 p.1 s.snapshots }

@@ -21,7 +21,15 @@ module Errors = struct
     let schedule_in_past = "Cannot schedule in the past"
     let before_next_scheduled = "Proposed scheduled is before the next scheduled time"
     let already_scheduled = "This snapshot time is already scheduled"
+    let rescheduled_after_next = "New scheduled is after next scheduled"
+    let rescheduled_before_previous = "New scheduled is before previous scheduled"
 end
+
+// TODO
+// Helper
+let reverse (type a) (xs : a list) : a list =
+    let f (ys,x : (a list * a)) : a list = x :: ys in
+    List.fold_left f ([] : a list) xs
 
 let scheduleSnapshot (proposed : timestamp) (snapshots:t) : t =
     // check if in the past
@@ -39,6 +47,65 @@ let scheduleSnapshot (proposed : timestamp) (snapshots:t) : t =
     in
     let new_scheduled_snapshots = proposed :: snapshots.scheduled_snapshots in
     { snapshots with scheduled_snapshots = new_scheduled_snapshots }
+
+let rescheduleSnapshot (old_time : timestamp) (new_time : timestamp) (snapshots:t) : t =
+    // check if in the past
+    let () = assert_with_error (old_time > Tezos.get_now()) Errors.schedule_in_past in
+    let () = assert_with_error (new_time > Tezos.get_now()) Errors.schedule_in_past in
+    
+    let new_scheduled = match snapshots.scheduled_snapshots with
+    | [] -> []
+    | [x] ->
+        if (x = old_time) then
+            [new_time]
+        else
+            [x]
+    | _ -> 
+        let assert_below_upper_bound (time: timestamp) (upperbound: timestamp) : unit = 
+            if (time > upperbound) then
+                failwith Errors.rescheduled_before_previous
+            else if  (time = upperbound) then
+                failwith Errors.already_scheduled
+            else
+                ()
+        in
+        let assert_above_lower_bound (time: timestamp) (lowerbound: timestamp) : unit = 
+            if (time < lowerbound) then
+                failwith Errors.rescheduled_after_next
+            else if  (time = lowerbound) then
+                failwith Errors.already_scheduled
+            else
+                ()
+        in
+        let replace (acc, elt: timestamp list * timestamp) =
+            match acc with
+                | [] -> elt :: []
+                | current::tl -> 
+                    if (current = old_time) then
+                        let next = elt in
+                        let _ = assert_below_upper_bound next new_time in
+                        let () = match tl with
+                            | [] -> ()
+                            | previous::_ -> assert_above_lower_bound  previous new_time
+                        in
+                        elt :: new_time :: tl
+                    else
+                        elt :: current :: tl
+        in
+        let new_scheduled_reversed = List.fold replace snapshots.scheduled_snapshots ([] : timestamp list) in
+        // case of last element of the list
+        let new_scheduled_reversed = match new_scheduled_reversed with
+            | cur::prev::tl ->
+                if (cur = old_time) then
+                    let _ = assert_below_upper_bound new_time prev  in
+                    new_time::prev::tl
+                else
+                    cur::prev::tl
+            | _ -> new_scheduled_reversed
+        in
+        reverse new_scheduled_reversed
+    in
+    { snapshots with scheduled_snapshots = new_scheduled }
 
 
 let update_account_snapshot (current_scheduled_snapshot: timestamp) (account: address) (account_balance: nat) (snapshots: t) : t = 
