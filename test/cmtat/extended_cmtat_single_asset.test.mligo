@@ -1189,7 +1189,7 @@ let test_snapshot_balanceof_view_success =
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//          VALIDATION
+//          VALIDATION (RULE_ENGINE)
 ////////////////////////////////////////////////////////////////////////////////
 
 let test_setruleengine_success_with_admin =
@@ -1215,6 +1215,7 @@ let test_setruleengine_success_with_admin =
   let _ = Test.transfer_exn orig.addr (SetRuleEngine (Some(rule_engine_address))) 0tez in
   let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
   ()
+
 
 let test_transfer_failure_because_refused =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
@@ -1284,4 +1285,33 @@ let test_transfer_success_without_frozen =
   in
   let _ = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
   let () = assert_balances orig.addr ((owner1, 10n), (owner2, 8n), (owner3, 12n)) in
+  ()
+
+
+let test_transfer_failure_invalid_rule_engine =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  // ORIGINATION RULE_ENGINE
+  let () = Test.set_source op1 in
+  let orig_caller = Test.originate (contract_of Caller) 0n 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+  let rule_engine_address : address = Tezos.address contr_caller in
+ 
+  // ORIGINATION 
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // SET RULE_ENGINE
+  let _ = Test.transfer_exn orig.addr (SetRuleEngine (Some(rule_engine_address))) 0tez in
+  let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
+  // TRANSFER
+  let transfer_requests = ([
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
+  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+  in
+  let r = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.VALIDATION.Errors.invalid_rule_engine in
   ()

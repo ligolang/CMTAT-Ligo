@@ -9,6 +9,7 @@ type t = {
 module Errors = struct
     let undefined_rule_engine = "Rule engine not defined"
     let refused_by_rule_engine = "NOT_VALIDATED by rule engine"
+    let invalid_rule_engine = "The pointed rule engine does not have an on-chain view validateTransfer"
 end
 
 type rule_engine_param = address option
@@ -24,7 +25,7 @@ let has_rule_engine (state: t) : bool =
 let validateTransfer (from_, to_, amount_: address * address * nat) (state: t) : bool =
     if has_rule_engine state then
         match Tezos.call_view "validateTransfer" (from_, to_, amount_) (Option.unopt state.rule_engine_contract) with
-        | None -> failwith "The pointed rule engine does not have an on-chain view validateTransfer"
+        | None -> failwith Errors.invalid_rule_engine
         | Some(v) -> v
     else
         true
