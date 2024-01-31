@@ -1,3 +1,10 @@
+# UNDER CONSTRUCTION !! 
+| asset kind   |  progress |
+|--------------|-----------|
+| single_asset | 80% |
+| multi_asset  | 0% |
+| nft          | 0% |
+
 # CMTA Token
 
 This repository is an implementation in cameligo of a CMTA token described by the [specifications](https://cmta.ch/content/15de282276334fc837b9687a13726ab9/cmtat-functional-specifications-jan-2022-final.pdf).
@@ -108,6 +115,7 @@ Being granted of a role allows to call specific entrypoints. Here is a list of r
 | BURNER            | burn |
 | RULER             | grantRole, revokeRole |
 | SNAPSHOOTER       | scheduleSnapshot, rescheduleSnapshot, unscheduleSnapshot |
+| VALIDATOR         | setRuleEngine |
 
 When calling one of these entrypoints a role verification is performed. The diagram illustrates this verification for the pause entrypoint. 
 
@@ -125,17 +133,44 @@ stateDiagram-v2
 ```
 The role verification is similar for all entrypoints. 
 
+### Validation
+
+The *Validation* module provides an external mecanism to authorize/unauthorize transfer of asset. 
+
+It is required to be able to prevent the execution of a transfer depending on arbitrary rules (such as specific account can be blacklisted). These rules are externalized in an other contract (called **RuleEngine**). 
+
+The *Validation* module provides a function `validateTransfer` that asks the **RuleEngine** contract if a transfer is allowed. This function is called during a `Transfer` (in the [implementation](./lib/cmtat/extendable_cmtat_single_asset.impl.mligo) of `transfer` function in the CMTAT library). 
+
+The *Validation* module provides a function `setRuleEngine` that modifies the **RuleEngine** contract that is used to unauthorize a transfer. This function expects the `address` of the new **RuleEngine** contract. This function is only callable by the administrator of the token.
+
+A example of **RuleEngine** contract is provided in the `test` directory. This [example contract](./test/helpers/rule_engine_contract.mligo) implements a naive blacklist and verifies that a given transaction does not involve blcklisted addresses.
+A RuleEngine contract must have an on-chain view with the following signature:
+```
+let validateTransfer (from_, to_, _amount_ : address * address * nat) (s : storage) : bool =
+```
+
+In the case a **RuleEngine** has been defined, the validation workflow of a `transfer` involves a RuleEngine contract.
+```mermaid
+sequenceDiagram
+    actor Alice
+    Alice->>+CMTAT: transfer 10 to John
+    CMTAT->>RULE_ENGINE: call view validateTransfer
+    RULE_ENGINE-->>CMTAT: authorized ? unauthorized
+    CMTAT->>CMTAT: update snapshots
+    CMTAT->>-CMTAT: proceed transfer if authorized
+```
 
 ### Snapshots
 
 The *Snapshots* module keeps track of total supply and account balance at certain point in time.
 
+TODO
 
 ## Entrypoints
 
 | module                    | function | parameter                     | 
 |---------------------------|----------|-------------------------------|
-| Administration            | pause    | bool                          |
+| ADMINISTRATION            | pause    | bool                          |
 | FA2.SingleAssetExtendable | transfer | FA2.SingleAssetExtendable.TZIP12.transfer |
 | FA2.SingleAssetExtendable | balance_of | FA2.SingleAssetExtendable.TZIP12.balance_of |
 | FA2.SingleAssetExtendable | update_operators | FA2.SingleAssetExtendable.TZIP12.update_operators |
@@ -146,6 +181,9 @@ The *Snapshots* module keeps track of total supply and account balance at certai
 | SNAPSHOTS                 | scheduleSnapshot | timestamp |
 | SNAPSHOTS                 | rescheduleSnapshot | timestamp * timestamp |
 | SNAPSHOTS                 | unscheduleSnapshot | timestamp |
+| VALIDATION                | setRuleEngine | address option |
+| VALIDATION                | validateTransfer | address * address * nat |
+| VALIDATION                | assert_validateTransfer | TZIP12.transfer |
 
 
 ## Views

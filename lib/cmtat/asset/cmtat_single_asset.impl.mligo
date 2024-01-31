@@ -4,6 +4,7 @@
 #import "../modules/single_asset/totalsupply.mligo" "TOTALSUPPLY"
 #import "../modules/authorizations.mligo" "AUTHORIZATIONS"
 #import "../modules/snapshots.mligo" "SNAPSHOTS"
+#import "../modules/validation.mligo" "VALIDATION"
 
 type ledger = CmtatSingleAssetExtendable.ledger
 
@@ -20,6 +21,7 @@ type storage =
   totalsupplies: TOTALSUPPLY.t;
   authorizations: AUTHORIZATIONS.t;
   snapshots: SNAPSHOTS.t;
+  validation: VALIDATION.t;
   ledger : ledger;
   operators : operators;
   token_metadata : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.tokenMetadata;
@@ -39,6 +41,9 @@ let empty_storage (admin, paused: address * bool): storage =
       totalsupply_snapshots = (Map.empty : SNAPSHOTS.snapshots);
       scheduled_snapshots = ([] : timestamp list)
     };
+    validation = {
+      rule_engine_contract = (None: address option)
+    };
     ledger = Big_map.empty;
     operators = Big_map.empty;
     token_metadata = Big_map.empty;
@@ -52,6 +57,7 @@ let lift (s : storage) : unit CmtatSingleAssetExtendable.storage =
   totalsupplies = s.totalsupplies;
   authorizations = s.authorizations;
   snapshots = s.snapshots;
+  validation = s.validation;
   extension = ();
   ledger = s.ledger;
   operators = s.operators;
@@ -72,6 +78,7 @@ let unlift (ret : operation list * unit CmtatSingleAssetExtendable.storage) : re
    totalsupplies = s.totalsupplies;
    authorizations = s.authorizations;
    snapshots = s.snapshots;
+   validation = s.validation;
   }
 
 [@entry]

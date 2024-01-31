@@ -1,4 +1,4 @@
-type role = MINTER | BURNER | PAUSER | RULER | FREEZER | SNAPSHOOTER
+type role = MINTER | BURNER | PAUSER | RULER | VALIDATOR | SNAPSHOOTER
 
 type t = (address, role set) big_map
 
@@ -10,7 +10,7 @@ module Errors = struct
     let not_minter = "This user is not allowed to mint assets"
     let not_burner = "This user is not allowed to burn assets"
     let not_pauser = "This user is not allowed to pause the contract"
-    let not_freezer = "This user is not allowed to freeze holders"
+    let not_validator = "This user is not allowed to change rule engine contract address"
     let not_snapshooter = "This user is not allowed to schedule snapshots"
 end
 
