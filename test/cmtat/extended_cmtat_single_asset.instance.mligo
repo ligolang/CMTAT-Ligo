@@ -73,3 +73,27 @@ let grantRole (p: address * Token.AUTHORIZATIONS.role) (s: storage) : ret =
 [@entry]
 let revokeRole (p: address * Token.AUTHORIZATIONS.role) (s: storage) : ret =
   Token.revokeRole p s
+
+[@entry]
+let scheduleSnapshot (p: timestamp) (s: storage) : ret =
+  Token.scheduleSnapshot p s
+
+[@entry]
+let rescheduleSnapshot (p: timestamp * timestamp) (s: storage) : ret =
+  Token.rescheduleSnapshot p s
+
+[@entry]
+let unscheduleSnapshot (p: timestamp) (s: storage) : ret =
+  Token.unscheduleSnapshot p s
+
+[@view]
+let getNextSnapshots () (s: storage) : timestamp list =
+  Token.getNextSnapshots s
+
+[@view]
+let snapshotTotalsupply (p: timestamp * nat) (s: storage) : nat =
+  Token.snapshotTotalsupply p s
+
+[@view]
+let snapshotBalanceOf (p: timestamp * address * nat) (s: storage) : nat =
+  Token.snapshotBalanceOf p s

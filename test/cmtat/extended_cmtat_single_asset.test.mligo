@@ -3,7 +3,9 @@
 #import "../helpers/totalsupply_view_caller_contract.mligo" "Caller"
 #import "../helpers/isoperator_view_caller_contract.mligo" "Caller_ISOPERATOR"
 #import "../helpers/tokenmetadata_view_caller_contract.mligo" "Caller_TOKENMETADATA"
-
+#import "../helpers/getnextsnapshots_view_caller_contract.mligo" "Caller_GETNEXTSNAPSHOTS"
+#import "../helpers/snapshottotalsupply_view_caller_contract.mligo" "Caller_SNAPSHOTTOTALSUPPLY"
+#import "../helpers/snapshotbalanceof_view_caller_contract.mligo" "Caller_SNAPSHOTBALANCEOF"
 
 
 let get_initial_storage (a, b, c : nat * nat * nat) =
@@ -72,6 +74,11 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       administration = { admin = op1; paused = false };
       totalsupplies  = a + b + c; //Big_map.literal([(0n, a + b + c)]);
       authorizations = Big_map.empty;
+      snapshots = {
+        account_snapshots = Big_map.empty;
+        totalsupply_snapshots = Map.empty;
+        scheduled_snapshots = ([] : timestamp list)
+      };
       extension = {
         issuer = op2;
       }
@@ -140,6 +147,88 @@ let assert_no_role
     match Big_map.find_opt user storage.authorizations with
     | Some(_flags) -> failwith "[assert_no_role] User should not have role"
     | None -> ()
+
+
+let assert_account_snapshot
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  (time: timestamp)
+  (a, b, c : (address * nat) * (address * nat) * (address * nat)) =
+    let storage = Test.get_storage contract_address in
+    let () = match Big_map.find_opt a.0 storage.snapshots.account_snapshots with
+    | Some(snaps) -> 
+        let () = match Map.find_opt time snaps with
+        | Some (v) -> assert(a.1 = v)
+        | None -> failwith "Account does not have a snapshot for this time"
+        in
+        ()
+    | None -> failwith "[assert_account_snapshot] user 1 has no snapshot"
+    in
+    let () = match Big_map.find_opt b.0 storage.snapshots.account_snapshots with
+    | Some(snaps) -> 
+        let () = match Map.find_opt time snaps with
+        | Some (v) -> assert(b.1 = v)
+        | None -> failwith "Account does not have a snapshot for this time"
+        in
+        ()
+    | None -> failwith "[assert_account_snapshot] user 2 has no snapshot"
+    in
+    let () = match Big_map.find_opt c.0 storage.snapshots.account_snapshots with
+    | Some(snaps) -> 
+        let () = match Map.find_opt time snaps with
+        | Some (v) -> assert(b.1 = v)
+        | None -> failwith "Account does not have a snapshot for this time"
+        in
+        ()
+    | None -> failwith "[assert_account_snapshot] user 3 has no snapshot"
+    in
+    ()
+
+let assert_totalsupply_snapshot
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  (time: timestamp)
+  (expected: nat) =
+    let storage = Test.get_storage contract_address in
+    let () = match Map.find_opt time storage.snapshots.totalsupply_snapshots with
+    | Some (v) -> assert(expected = v)
+    | None -> failwith "No total supply snapshot for this time"
+    in
+    ()
+
+
+let assert_scheduled_snapshot
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  (time: timestamp) = 
+    let storage = Test.get_storage contract_address in
+    let () = assert (List_helper.contains time storage.snapshots.scheduled_snapshots)
+    in
+    ()
+
+let assert_no_scheduled_snapshot
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  (time: timestamp) = 
+    let storage = Test.get_storage contract_address in
+    assert (not List_helper.contains time storage.snapshots.scheduled_snapshots)
+
+
+let assert_scheduled_snapshots_contains
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  (times: timestamp list) = 
+    let storage = Test.get_storage contract_address in
+    let contains_one (time: timestamp) = assert (List_helper.contains time storage.snapshots.scheduled_snapshots) in
+    List.iter contains_one times 
+
+// Verify that scheduled_snapshot is ordered 
+let check_invariant_scheduled_snapshot
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  = 
+    let storage = Test.get_storage contract_address in
+    match storage.snapshots.scheduled_snapshots with
+    | [] -> ()
+    | [_] -> ()
+    | _::tl -> 
+      let merged =  List_helper.zip(storage.snapshots.scheduled_snapshots, tl) in
+      List.iter (fun(a, b: timestamp * timestamp) -> assert(a > b)) merged
+
 
 (* Assert contract call results in failwith with given string *)
 let string_failure (res : test_exec_result) (expected : string) : unit =
@@ -368,8 +457,7 @@ let test_tokenmetadata_view_success =
 
   // Call View of Caller contract
  // Caller contract calls the "is_opertor" view of CMTAT contract
-  // let op_request : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.operator = { owner=owner1; operator=op1; token_id=0n } in
-  let r = Test.transfer_to_contract contr_caller (Request (fa2_address, 0n)) 0tez in
+  let _r = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, 0n)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
   match storage_caller with
   | Some(data) -> 
@@ -634,4 +722,456 @@ let test_revoke_role_failure_missing_role =
   let r = Test.transfer_to_contract contr (RevokeRole (owner1, flag_burner)) 0tez in
   let () = string_failure r CMTAT_single_asset.Token.AUTHORIZATIONS.Errors.missing_role in 
   let () = assert_role addr owner1 flag_minter in
+  ()
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//          SNAPSHOTS
+////////////////////////////////////////////////////////////////////////////////
+
+let test_schedule_snapshot_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+  ()
+
+let test_transfer_with_scheduled_snapshot_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // SCHEDULE SNAPSHOT
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+  // TRANSFER
+  let transfer_requests = ([
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
+  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+  in
+  let _ = Test.transfer_exn orig.addr (Transfer transfer_requests) 0tez in
+  let () = assert_account_snapshot orig.addr snapshot_time_0 ((owner1, 10n), (owner2, 10n), (owner3, 10n))in
+  // let () = assert_totalsupply_snapshot orig.addr snapshot_time_0 30n in // totalsupply snapshot is not changed after a transfer
+  ()
+
+let test_mint_with_scheduled_snapshot_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param) in
+  let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
+  
+  let () = assert_account_snapshot orig.addr snapshot_time_0 ((owner1, 10n), (owner1, 10n), (owner1, 10n))in
+  let () = assert_totalsupply_snapshot orig.addr snapshot_time_0 30n in
+  ()
+
+
+let test_burn_with_scheduled_snapshot_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let burn_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.burn_param) in
+  let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
+  
+  let () = assert_account_snapshot orig.addr snapshot_time_0 ((owner1, 10n), (owner1, 10n), (owner1, 10n))in
+  let () = assert_totalsupply_snapshot orig.addr snapshot_time_0 30n in
+  ()
+
+
+let test_reschedule_snapshot_success_1_element =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let snapshot_time_0_resched = ("2024-01-01t02:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (RescheduleSnapshot (snapshot_time_0, snapshot_time_0_resched)) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0_resched in
+  ()
+
+let test_reschedule_snapshot_success_2_elements =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let snapshot_time_1 = ("2024-01-02t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  let snapshot_time_0_resched = ("2024-01-01t02:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (RescheduleSnapshot (snapshot_time_0, snapshot_time_0_resched)) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0_resched in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+  ()
+
+let test_reschedule_snapshot_success_3_elements =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let snapshot_time_1 = ("2024-01-02t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  let snapshot_time_2 = ("2024-01-03t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_2) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_2 in
+
+  let snapshot_time_1_resched = ("2024-01-01t02:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (RescheduleSnapshot (snapshot_time_1, snapshot_time_1_resched)) 0tez in
+  let () = check_invariant_scheduled_snapshot orig.addr in
+  let () = assert_scheduled_snapshots_contains orig.addr [snapshot_time_0; snapshot_time_1_resched; snapshot_time_2] in
+  let () = assert_no_scheduled_snapshot orig.addr snapshot_time_1 in
+  ()
+
+
+let test_reschedule_snapshot_failure_3_elements_lowerbound =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let snapshot_time_1 = ("2024-01-02t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  let snapshot_time_2 = ("2024-01-03t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_2) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_2 in
+
+  let snapshot_time_1_resched = ("2023-01-01t00:00:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (RescheduleSnapshot (snapshot_time_1, snapshot_time_1_resched)) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.rescheduled_before_previous in
+  ()
+
+  
+let test_reschedule_snapshot_failure_3_elements_upperbound =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let snapshot_time_1 = ("2024-01-02t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  let snapshot_time_2 = ("2024-01-03t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_2) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_2 in
+
+  let snapshot_time_1_resched = ("2024-01-04t00:00:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (RescheduleSnapshot (snapshot_time_1, snapshot_time_1_resched)) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.rescheduled_after_next in
+  ()
+
+let test_reschedule_snapshot_failure_3_elements_already =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let snapshot_time_1 = ("2024-01-02t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  let snapshot_time_2 = ("2024-01-03t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_2) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_2 in
+
+  let snapshot_time_1_resched = ("2024-01-03t00:00:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (RescheduleSnapshot (snapshot_time_1, snapshot_time_1_resched)) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.already_scheduled in
+  ()
+
+let test_unschedule_snapshot_success_with_admin =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let () = Test.set_source initial_storage.administration.admin in
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let _r = Test.transfer_exn orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_no_scheduled_snapshot orig.addr snapshot_time_0 in
+  ()
+
+let test_unschedule_snapshot_success_with_snapshooter =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_snapshooter : CMTAT_single_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
+  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+
+  let () = Test.set_source owner1 in
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let _r = Test.transfer_exn orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_no_scheduled_snapshot orig.addr snapshot_time_0 in
+  ()
+
+let test_unschedule_snapshot_failure_not_found =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let snapshot_time_1 = ("2024-01-02t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  let r = Test.transfer orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.snapshot_not_found in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+  ()
+
+let test_unschedule_snapshot_failure_no_scheduled =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let () = assert_no_scheduled_snapshot orig.addr snapshot_time_0 in
+  let r = Test.transfer orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.no_snapshot_scheduled in
+  ()
+
+// let test_unschedule_snapshot_failure_in_past =
+//   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+//   let _owner1 = List_helper.nth_exn 0 owners in
+//   let _owner2 = List_helper.nth_exn 1 owners in
+//   let _owner3 = List_helper.nth_exn 2 owners in
+//   let op1    = List_helper.nth_exn 0 operators in
+//   let () = Test.set_source op1 in
+//   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+//   let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+//   let () = assert_no_scheduled_snapshot orig.addr snapshot_time_0 in
+//   let r = Test.transfer orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
+//   let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.no_snapshot_scheduled in
+//   ()
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//                        SNAPSHOT  VIEWS
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+let test_getnextsnapshots_view_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  // ORIGINATION CALLER
+  let () = Test.set_source op1 in
+  let orig_caller = Test.originate (contract_of Caller_GETNEXTSNAPSHOTS) ([] : timestamp list) 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let contr = Test.to_contract orig.addr in 
+  let fa2_address : address = Tezos.address contr in
+
+  // SCHEDULESNAPSHOT
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+  // SCHEDULESNAPSHOT
+  let snapshot_time_1 = ("2024-01-02t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  // Call View of Caller contract
+ // Caller contract calls the "getNextSnapshots" view of CMTAT contract
+  let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address)) 0tez in
+  let storage_caller = Test.get_storage orig_caller.addr in
+  let () = assert(storage_caller = [snapshot_time_0; snapshot_time_1]) in
+  ()
+
+
+let test_snapshot_totalsupply_view_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  // ORIGINATION CALLER
+  let () = Test.set_source op1 in
+  let orig_caller = Test.originate (contract_of Caller_SNAPSHOTTOTALSUPPLY) 0n 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let contr = Test.to_contract orig.addr in 
+  let fa2_address : address = Tezos.address contr in
+
+  // SCHEDULESNAPSHOT
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+
+  // Keep in mind the totalsupply before mint
+  let storage = Test.get_storage orig.addr in
+  let totalsupply_before_mint = storage.totalsupplies in
+
+  // MINT (with admin)
+  let () = Test.set_source initial_storage.administration.admin in
+  let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param)
+  in
+  let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
+  let () = assert_balances orig.addr ((owner1, 12n), (owner2, 10n), (owner3, 10n)) in
+  let () = assert_totalsupply orig.addr 32n in
+
+  // Call View of Caller contract
+ // Caller contract calls the "snapshotTotalSupply" view of CMTAT contract
+  let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_0, 0n)) 0tez in
+  let storage_caller = Test.get_storage orig_caller.addr in
+  let () = assert(storage_caller = totalsupply_before_mint) in
+  ()
+
+
+let test_snapshot_balanceof_view_success =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  // ORIGINATION CALLER
+  let () = Test.set_source op1 in
+  let orig_caller = Test.originate (contract_of Caller_SNAPSHOTBALANCEOF) 0n 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let contr = Test.to_contract orig.addr in 
+  let fa2_address : address = Tezos.address contr in
+
+  // SCHEDULESNAPSHOT
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+
+  // Keep in mind the owner1 balance before mint
+  let storage = Test.get_storage orig.addr in
+  let owner1_balance_before_mint = match Big_map.find_opt owner1 storage.ledger with
+    Some amt -> amt
+  | None -> failwith "Wrong setup ? owner1 has no balance"
+  in
+
+  // MINT (with admin)
+  let () = Test.set_source initial_storage.administration.admin in
+  let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param)
+  in
+  let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
+  let () = assert_balances orig.addr ((owner1, 12n), (owner2, 10n), (owner3, 10n)) in
+  let () = assert_totalsupply orig.addr 32n in
+
+  // Call View of Caller contract
+ // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract
+  let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_0, owner1, 0n)) 0tez in
+  let storage_caller = Test.get_storage orig_caller.addr in
+  let () = assert(storage_caller = owner1_balance_before_mint) in
   ()
