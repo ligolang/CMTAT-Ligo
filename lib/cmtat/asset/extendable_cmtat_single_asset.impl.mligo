@@ -4,6 +4,7 @@
 #import "../modules/single_asset/totalsupply.mligo" "TOTALSUPPLY"
 #import "../modules/authorizations.mligo" "AUTHORIZATIONS"
 #import "../modules/snapshots.mligo" "SNAPSHOTS"
+#import "../modules/validation.mligo" "VALIDATION"
 
 type ledger = FA2.SingleAssetExtendable.ledger
 
@@ -21,6 +22,7 @@ type 'a storage =
     totalsupplies: TOTALSUPPLY.t;
     authorizations: AUTHORIZATIONS.t;
     snapshots: SNAPSHOTS.t;
+    validation: VALIDATION.t;
     extension : 'a
 }
 
@@ -29,6 +31,7 @@ type 'a ret = operation list * 'a storage
 
 let transfer (type a) (tr : FA2.SingleAssetExtendable.TZIP12.transfer) (s : a storage) : a ret =
     let () = ADMINISTRATION.assert_not_paused s.administration in
+    let () = VALIDATION.assert_validateTransfer tr s.validation in
     let new_snapshots = SNAPSHOTS.update tr s.ledger s.totalsupplies s.snapshots in
     let sub_fa2_storage = {
         ledger=s.ledger; 
@@ -213,3 +216,8 @@ let snapshotTotalsupply (type a) (p: timestamp * nat) (s: a storage) : nat =
 
 let snapshotBalanceOf (type a) (p: timestamp * address * nat) (s: a storage) : nat =
     SNAPSHOTS.snapshotBalanceOf p.0 p.1 p.2 s.ledger s.snapshots
+
+let setRuleEngine (type a) (p: VALIDATION.rule_engine_param) (s: a storage) : a ret =
+    let sender = Tezos.get_sender() in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, VALIDATOR) s.authorizations)) AUTHORIZATIONS.Errors.not_validator in
+    [], { s with validation = VALIDATION.set_rule_engine p s.validation }

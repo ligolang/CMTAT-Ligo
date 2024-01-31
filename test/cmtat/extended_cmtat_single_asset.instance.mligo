@@ -97,3 +97,7 @@ let snapshotTotalsupply (p: timestamp * nat) (s: storage) : nat =
 [@view]
 let snapshotBalanceOf (p: timestamp * address * nat) (s: storage) : nat =
   Token.snapshotBalanceOf p s
+
+[@entry]
+let setRuleEngine (p: Token.VALIDATION.rule_engine_param) (s: storage) : ret =
+  Token.setRuleEngine p s

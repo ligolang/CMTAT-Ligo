@@ -18,6 +18,7 @@ let lift (s : storage) : unit Token.CmtatSingleAssetExtendable.storage =
    totalsupplies = s.totalsupplies;
    authorizations = s.authorizations;
    snapshots = s.snapshots;
+   validation = s.validation;
   }
 
 [@inline]
@@ -33,6 +34,7 @@ let unlift (ret : operation list * unit Token.CmtatSingleAssetExtendable.storage
    totalsupplies = s.totalsupplies;
    authorizations = s.authorizations;
    snapshots = s.snapshots;
+   validation = s.validation;
   }
 
 [@entry]

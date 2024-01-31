@@ -108,6 +108,7 @@ Being granted of a role allows to call specific entrypoints. Here is a list of r
 | BURNER            | burn |
 | RULER             | grantRole, revokeRole |
 | SNAPSHOOTER       | scheduleSnapshot, rescheduleSnapshot, unscheduleSnapshot |
+| VALIDATOR         | setRuleEngine |
 
 When calling one of these entrypoints a role verification is performed. The diagram illustrates this verification for the pause entrypoint. 
 
@@ -135,7 +136,7 @@ The *Snapshots* module keeps track of total supply and account balance at certai
 
 | module                    | function | parameter                     | 
 |---------------------------|----------|-------------------------------|
-| Administration            | pause    | bool                          |
+| ADMINISTRATION            | pause    | bool                          |
 | FA2.SingleAssetExtendable | transfer | FA2.SingleAssetExtendable.TZIP12.transfer |
 | FA2.SingleAssetExtendable | balance_of | FA2.SingleAssetExtendable.TZIP12.balance_of |
 | FA2.SingleAssetExtendable | update_operators | FA2.SingleAssetExtendable.TZIP12.update_operators |

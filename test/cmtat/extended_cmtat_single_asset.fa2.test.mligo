@@ -74,6 +74,9 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
         totalsupply_snapshots = Map.empty;
         scheduled_snapshots = ([] : timestamp list)
       };
+      validation = {
+        rule_engine_contract = (None: address option)
+      };
       extension = {
         issuer = op2;
       }
