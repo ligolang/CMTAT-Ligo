@@ -72,7 +72,7 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       metadata       = metadata;
       token_metadata = token_metadata;
       operators      = operators;
-      administration = { admin = op1; paused = false };
+      administration = { admin = op1; paused = false; killed = false };
       totalsupplies  = a + b + c; //Big_map.literal([(0n, a + b + c)]);
       authorizations = Big_map.empty;
       snapshots = {
@@ -109,6 +109,25 @@ let assert_balances
   let () = match (Big_map.find_opt owner3 ledger) with
     Some amt -> assert (amt = balance3)
   | None -> failwith "incorret address"
+  in
+  ()
+
+let assert_no_balances
+  (contract_address : (CMTAT_single_asset parameter_of, CMTAT_single_asset.storage) typed_address )
+  (a, b, c : address * address * address) =
+  let storage = Test.get_storage contract_address in
+  let ledger = storage.ledger in
+  let () = match (Big_map.find_opt a ledger) with
+    Some _amt -> failwith "Should not have balance"
+  | None -> ()
+  in
+  let () = match (Big_map.find_opt b ledger) with
+    Some _amt -> failwith "Should not have balance"
+  | None -> ()
+  in
+  let () = match (Big_map.find_opt c ledger) with
+    Some _amt -> failwith "Should not have balance"
+  | None -> ()
   in
   ()
 
@@ -184,6 +203,25 @@ let assert_account_snapshot
         in
         ()
     | None -> failwith "[assert_account_snapshot] user 3 has no snapshot"
+    in
+    ()
+
+ 
+let assert_no_account_snapshot
+  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
+  (a, b, c : address * address * address) =
+    let storage = Test.get_storage contract_address in
+    let () = match Big_map.find_opt a storage.snapshots.account_snapshots with
+    | Some(_snaps) -> failwith "Account should not be registered"
+    | None -> ()
+    in
+    let () = match Big_map.find_opt b storage.snapshots.account_snapshots with
+    | Some(_snaps) -> failwith "Account should not be registered"
+    | None -> ()
+    in
+      let () = match Big_map.find_opt c storage.snapshots.account_snapshots with
+    | Some(_snaps) -> failwith "Account should not be registered"
+    | None -> ()
     in
     ()
 
@@ -264,6 +302,83 @@ let test_origination_success =
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
   let () = assert_balances orig.addr ((owner1, 10n), (owner2, 10n), (owner3, 10n)) in
   let () = assert_totalsupply orig.addr 30n in
+  ()
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+//                KILL
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+let test_kill_success_with_admin =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // KILL
+  let _ = Test.transfer_exn orig.addr (Kill ()) 0tez in
+  let () = assert_paused orig.addr true in
+  let () = assert_no_balances orig.addr (owner1, owner2, owner3) in
+  let () = assert_totalsupply orig.addr 0n in
+  let () = assert_rule_engine orig.addr (None: address option) in
+
+  let storage = Test.get_storage orig.addr in
+  let () = assert (storage.snapshots.scheduled_snapshots = ([]: timestamp list)) in
+  let () = assert_no_account_snapshot orig.addr (owner1, owner2, owner3) in
+
+  // PAUSE
+  // Special case: due to override, it is possible to Unpause the contract despite the fact that the contract is killed
+  let _r = Test.transfer orig.addr (Pause false) 0tez in
+  let () = assert_paused orig.addr false in
+
+  // GRANT ROLE - fails
+  let flag_snapshooter : CMTAT_single_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
+  let r = Test.transfer orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.ADMINISTRATION.Errors.contract_killed in
+
+  // TRANSFER - fails
+  let transfer_requests = ([
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
+  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+  in
+  let r = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.ADMINISTRATION.Errors.contract_killed in
+  ()
+
+
+let test_kill_failure_not_admin =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let () = Test.set_source owner1 in
+  // KILL - fails
+  let r = Test.transfer orig.addr (Kill ()) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.ADMINISTRATION.Errors.not_admin in
+
+  let () = Test.set_source initial_storage.administration.admin in
+  // GRANT ROLE
+  let flag_snapshooter : CMTAT_single_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
+  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+  // GRANT ROLE
+  let flag_ruler : CMTAT_single_asset.Token.AUTHORIZATIONS.role = RULER in
+  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, flag_ruler)) 0tez in
+  // GRANT ROLE
+  let flag_validator : CMTAT_single_asset.Token.AUTHORIZATIONS.role = VALIDATOR in
+  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, flag_validator)) 0tez in
+
+  // KILL - fails
+  let () = Test.set_source owner1 in
+  let r = Test.transfer orig.addr (Kill ()) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.ADMINISTRATION.Errors.not_admin in
   ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////

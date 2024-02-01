@@ -32,7 +32,7 @@ type ret = operation list * storage
 
 let empty_storage (admin, paused: address * bool): storage =
   {
-    administration = { admin=admin; paused=paused };
+    administration = { admin=admin; paused=paused; killed = false };
     totalsupplies = 0n;
     authorizations = Big_map.empty;
     snapshots = 

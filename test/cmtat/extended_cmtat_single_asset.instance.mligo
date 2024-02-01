@@ -101,3 +101,7 @@ let snapshotBalanceOf (p: timestamp * address * nat) (s: storage) : nat =
 [@entry]
 let setRuleEngine (p: Token.VALIDATION.rule_engine_param) (s: storage) : ret =
   Token.setRuleEngine p s
+
+[@entry]
+let kill (_p: unit) (s: storage) : ret =
+  Token.kill () s
