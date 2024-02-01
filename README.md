@@ -93,7 +93,7 @@ FA2 basic features (from standard) consists on allowing people to transfer asset
 
 ### Total supply
 
-The *Totalsupply* module consists on keep track of the total supply of the token.
+The *Totalsupply* module consists on keep track of the total supply of the token. The total supply represents the total number of assets. It is updated when some assets are minted or burned. 
 
 ### Administration
 
@@ -133,6 +133,10 @@ stateDiagram-v2
 ```
 The role verification is similar for all entrypoints. 
 
+The *Authorizations* module provides two functions (`grantRole`, `revokeRole`) to modify roles for a given user.
+
+The *Authorizations* module also provides a function (`hasRole`) to verify if a given user has a given role .
+
 ### Validation
 
 The *Validation* module provides an external mecanism to authorize/unauthorize transfer of asset. 
@@ -164,7 +168,20 @@ sequenceDiagram
 
 The *Snapshots* module keeps track of total supply and account balance at certain point in time.
 
-TODO
+
+The *Snapshots* module provides the `scheduleSnapshot` function which allows to schedule snapshots (in the future).  
+When the Transfer entrypoint (or Mint Burn) is called it updates the total supply and account balances inside the current snapshot. 
+TODO  ==== This update is done before the execution of the transfer, thus snapshots represents the balance before the transfer is done.
+
+The *Snapshots* module provides the `rescheduleSnapshot` function to modify when a snapshot is scheduled (the scheduled snapshots cannot be re-ordered).
+
+The *Snapshots* module provides the `unscheduleSnapshot` function to cancel the last scheduled snapshot.
+
+The *Snapshots* module provides a view `getNextSnapshots` to retrieve the existing scheduled snapshot times (ones not yet done). So the first one is the current snapshot.
+
+The *Snapshots* module also provides views (`snapshotTotalsupply`, `snapshotBalanceOf`)to query the total supply and account balances for a given snapshot time.
+
+
 
 ## Entrypoints
 
@@ -176,6 +193,7 @@ TODO
 | FA2.SingleAssetExtendable | update_operators | FA2.SingleAssetExtendable.TZIP12.update_operators |
 |                           | mint | mint_param |
 |                           | burn | burn_param |
+|                           | kill | unit |
 | AUTHORIZATIONS            | grantRole | address * AUTHORIZATIONS.role |
 | AUTHORIZATIONS            | revokeRole | address * AUTHORIZATIONS.role |
 | SNAPSHOTS                 | scheduleSnapshot | timestamp |
