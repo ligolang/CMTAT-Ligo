@@ -10,7 +10,7 @@ module Errors = struct
 end
 
 let get_total_supply (totalsupplies:t) (token_id : token_id) : amount_ =
-    match Big_map.find_opt token_id totalsupplies with Some (a) -> a | None -> 0n
+    match (Big_map.find_opt token_id totalsupplies) with Some (a) -> a | None -> 0n
 
 let set_total_supply (totalsupplies:t) (token_id : token_id ) (amount_:amount_) : t =
     Big_map.update token_id (Some amount_) totalsupplies

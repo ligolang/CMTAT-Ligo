@@ -3,7 +3,7 @@
 #import "../modules/administration.mligo" "ADMINISTRATION"
 #import "../modules/single_asset/totalsupply.mligo" "TOTALSUPPLY"
 #import "../modules/authorizations.mligo" "AUTHORIZATIONS"
-#import "../modules/snapshots.mligo" "SNAPSHOTS"
+#import "../modules/single_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 
 type ledger = CmtatSingleAssetExtendable.ledger

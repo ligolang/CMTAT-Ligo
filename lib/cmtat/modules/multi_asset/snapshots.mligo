@@ -1,13 +1,13 @@
 // #import "../lib/multi_asset/fa2.mligo" "FA2"
 #import "@ligo/fa/lib/main.mligo" "FA2"
-#import "./single_asset/totalsupply.mligo" "TOTALSUPPLY"
+#import "./totalsupply.mligo" "TOTALSUPPLY"
 
-module TZIP12 = FA2.SingleAssetExtendable.TZIP12
+module TZIP12 = FA2.MultiAssetExtendable.TZIP12
 
 
 type snapshot_data = nat
 
-type snapshots = (timestamp, snapshot_data) map
+type snapshots = ((timestamp * nat), snapshot_data) map
 
 type t = {
     account_snapshots : (address, snapshots) big_map;
@@ -26,15 +26,18 @@ module Errors = struct
     let snapshot_not_found = "Snapshot not found"
 end
 
-// TODO
-// Helper
+// Helpers
 let reverse (type a) (xs : a list) : a list =
     let f (ys,x : (a list * a)) : a list = x :: ys in
     List.fold_left f ([] : a list) xs
 
-let get_for_user_curried (ledger, owner: FA2.SingleAssetExtendable.ledger * address) = 
-    FA2.SingleAssetExtendable.get_for_user ledger owner
+let get_for_user_curried (ledger, owner, token_id: FA2.MultiAssetExtendable.ledger * address * nat) = 
+    FA2.MultiAssetExtendable.get_for_user ledger owner token_id
 
+let get_total_supply_curried (ledger, token_id: TOTALSUPPLY.t * nat) = 
+    TOTALSUPPLY.get_total_supply ledger token_id
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 let scheduleSnapshot (proposed : timestamp) (snapshots:t) : t =
     // check if in the past
@@ -128,37 +131,39 @@ let getNextSnapshots (snapshots:t) : timestamp list =
     List.fold filter_past snapshots.scheduled_snapshots ([] : timestamp list)
 
 // If there is a scheduled snapshot for the given time returns totalsupply of the snapshot otherwise returns the current totalsupply
-let snapshotTotalsupply (time : timestamp) (_token_id: nat) (totalsupplies: TOTALSUPPLY.t)  (snapshots:t) : nat =
-    match Map.find_opt time snapshots.totalsupply_snapshots with
-    | None -> totalsupplies
+let snapshotTotalsupply (time : timestamp) (token_id: nat) (totalsupplies: TOTALSUPPLY.t)  (snapshots:t) : nat =
+    match Map.find_opt (time, token_id) snapshots.totalsupply_snapshots with
+    | None -> (match (Big_map.find_opt token_id totalsupplies) with
+        | Some(actual) -> actual
+        | None -> 0n)
     | Some(v) -> v
 
 // If there is a scheduled snapshot for the given time returns balance of the snapshot otherwise returns the current user balance
-let snapshotBalanceOf (time : timestamp) (user: address) (_token_id: nat) (ledger: FA2.SingleAssetExtendable.ledger) (snapshots:t) : nat =
+let snapshotBalanceOf (time : timestamp) (user: address) (token_id: nat) (ledger: FA2.MultiAssetExtendable.ledger) (snapshots:t) : nat =
     match Big_map.find_opt user snapshots.account_snapshots with
-    | None -> get_for_user_curried(ledger, user)
+    | None -> get_for_user_curried(ledger, user, token_id)
     | Some(snaps) -> 
-        let value = match Map.find_opt time snaps with
-        | None -> get_for_user_curried(ledger, user)
+        let value = match Map.find_opt (time, token_id) snaps with
+        | None -> get_for_user_curried(ledger, user, token_id)
         | Some (v) -> v
         in value
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //                          UPDATE
 ////////////////////////////////////////////////////////////////////////////////////////
-let update_account_snapshot (current_scheduled_snapshot: timestamp) (account: address) (account_balance: nat) (snapshots: t) : t = 
+let update_account_snapshot (current_scheduled_snapshot: timestamp) (token_id: nat) (account: address) (account_balance: nat) (snapshots: t) : t = 
     let new_account_snapshots = match Big_map.find_opt account snapshots.account_snapshots with
     | Some(snaps) -> 
-        let new_snaps = Map.update current_scheduled_snapshot (Some(account_balance)) snaps in
+        let new_snaps = Map.update (current_scheduled_snapshot, token_id) (Some(account_balance)) snaps in
         Big_map.update account (Some(new_snaps)) snapshots.account_snapshots
     | None() -> 
-        let snaps = Map.literal([(current_scheduled_snapshot, account_balance)]) in
+        let snaps = Map.literal([((current_scheduled_snapshot, token_id), account_balance)]) in
         Big_map.add account snaps snapshots.account_snapshots
     in
     { snapshots with account_snapshots = new_account_snapshots }
 
-let update_totalsupply_snapshot (current_scheduled_snapshot: timestamp) (_token_id: nat) (totalsupply_balance: nat) (snapshots: t) : t = 
-    let new_totalsupply_snapshots = Map.update current_scheduled_snapshot (Some(totalsupply_balance)) snapshots.totalsupply_snapshots in
+let update_totalsupply_snapshot (current_scheduled_snapshot: timestamp) (token_id: nat) (totalsupply_balance: nat) (snapshots: t) : t = 
+    let new_totalsupply_snapshots = Map.update (current_scheduled_snapshot, token_id) (Some(totalsupply_balance)) snapshots.totalsupply_snapshots in
     { snapshots with totalsupply_snapshots = new_totalsupply_snapshots }
 
 let get_current_scheduled_snapshot (snapshots:t) : timestamp option =
@@ -169,8 +174,8 @@ let get_current_scheduled_snapshot (snapshots:t) : timestamp option =
     List.fold get_current snapshots.scheduled_snapshots (None: timestamp option)
 
 
-let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2.SingleAssetExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots: t) : t =
-    let (from_, to_, amt, _token_id) = tr in
+let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2.MultiAssetExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots: t) : t =
+    let (from_, to_, amt, token_id) = tr in
     if (amt = 0n) then
         snapshots
     else
@@ -184,27 +189,27 @@ let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2
             | None, None  -> (failwith "SNAPSHOT internal error": t) // snapshots
             | None, Some(to_) -> // MINT
                 // Update to_ account
-                let to_balance = get_for_user_curried(ledger, to_) in
-                let new_snapshots = update_account_snapshot current_scheduled_snapshot to_ to_balance new_snapshots in
+                let to_balance = get_for_user_curried(ledger, to_, token_id) in
+                let new_snapshots = update_account_snapshot current_scheduled_snapshot token_id to_ to_balance new_snapshots in
                 // Update total supply
-                let total_supply_balance = TOTALSUPPLY.get_total_supply totalsupplies in
-                let new_snapshots = update_totalsupply_snapshot current_scheduled_snapshot 0n total_supply_balance new_snapshots in
+                let total_supply_balance = get_total_supply_curried (totalsupplies, token_id) in
+                let new_snapshots = update_totalsupply_snapshot current_scheduled_snapshot token_id total_supply_balance new_snapshots in
                 new_snapshots
             | Some(from_), Some(to_) -> // TRANSFER
                 // Update from_ account 
-                let from_balance = get_for_user_curried(ledger, from_) in
-                let new_snapshots = update_account_snapshot current_scheduled_snapshot from_ from_balance new_snapshots in
+                let from_balance = get_for_user_curried(ledger, from_, token_id) in
+                let new_snapshots = update_account_snapshot current_scheduled_snapshot token_id from_ from_balance new_snapshots in
                 // Update to_ account
-                let to_balance = get_for_user_curried(ledger, to_) in
-                let new_snapshots = update_account_snapshot current_scheduled_snapshot to_ to_balance new_snapshots in
+                let to_balance = get_for_user_curried(ledger, to_, token_id) in
+                let new_snapshots = update_account_snapshot current_scheduled_snapshot token_id to_ to_balance new_snapshots in
                 new_snapshots
             | Some(from_), None -> // BURN
                 // Update from_ account 
-                let from_balance = get_for_user_curried(ledger, from_) in
-                let new_snapshots = update_account_snapshot current_scheduled_snapshot from_ from_balance new_snapshots in
+                let from_balance = get_for_user_curried(ledger, from_, token_id) in
+                let new_snapshots = update_account_snapshot current_scheduled_snapshot token_id from_ from_balance new_snapshots in
                 // Update total supply
-                let total_supply_balance = TOTALSUPPLY.get_total_supply totalsupplies in
-                let new_snapshots = update_totalsupply_snapshot current_scheduled_snapshot 0n total_supply_balance new_snapshots in
+                let total_supply_balance = get_total_supply_curried (totalsupplies, token_id) in
+                let new_snapshots = update_totalsupply_snapshot current_scheduled_snapshot token_id total_supply_balance new_snapshots in
                 new_snapshots
             in
             new_snapshots
@@ -213,7 +218,7 @@ let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2
 
 
 
-let update (p : TZIP12.transfer) (ledger: FA2.SingleAssetExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots:t) : t =
+let update (p : TZIP12.transfer) (ledger: FA2.MultiAssetExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots:t) : t =
     let process_atomic_transfer (from_:address) (acc_snapshots, tr: t * TZIP12.atomic_trans) =
         let {to_;token_id;amount=amount_} = tr in
         update_atomic (Some(from_), Some(to_), amount_, token_id) ledger totalsupplies acc_snapshots
