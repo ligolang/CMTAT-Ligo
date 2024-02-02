@@ -6,6 +6,9 @@
 #import "../modules/multi_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 
+module TZIP12 = FA2.MultiAssetExtendable.TZIP12
+module TZIP16 = FA2.MultiAssetExtendable.TZIP16
+
 type ledger = FA2.MultiAssetExtendable.ledger
 
 type operator = address
@@ -16,7 +19,7 @@ type 'a storage =
 {
     ledger : ledger;
     operators : operators;
-    token_metadata : FA2.MultiAssetExtendable.TZIP12.tokenMetadata;
+    token_metadata : TZIP12.tokenMetadata;
     metadata : FA2.MultiAssetExtendable.TZIP16.metadata;
     administration : ADMINISTRATION.t;
     totalsupplies: TOTALSUPPLY.t;
@@ -29,7 +32,7 @@ type 'a storage =
 
 type 'a ret = operation list * 'a storage
 
-let transfer (type a) (tr : FA2.MultiAssetExtendable.TZIP12.transfer) (s : a storage) : a ret =
+let transfer (type a) (tr : TZIP12.transfer) (s : a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let () = ADMINISTRATION.assert_not_paused s.administration in
     let () = VALIDATION.assert_validateTransfer tr s.validation in
@@ -50,7 +53,7 @@ let transfer (type a) (tr : FA2.MultiAssetExtendable.TZIP12.transfer) (s : a sto
         snapshots = new_snapshots;
     }
 
-let balance_of (type a) (b : FA2.MultiAssetExtendable.TZIP12.balance_of) (s : a storage) : a ret =
+let balance_of (type a) (b : TZIP12.balance_of) (s : a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sub_fa2_storage = {
         ledger=s.ledger; 
@@ -67,7 +70,7 @@ let balance_of (type a) (b : FA2.MultiAssetExtendable.TZIP12.balance_of) (s : a 
         metadata = new_storage.metadata;
     }
 
-let update_operators (type a) (updates : FA2.MultiAssetExtendable.TZIP12.update_operators) (s : a storage) : a ret =
+let update_operators (type a) (updates : TZIP12.update_operators) (s : a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sub_fa2_storage = {
         ledger=s.ledger; 

@@ -9,7 +9,7 @@
 #import "../helpers/rule_engine_contract.mligo" "RULE_ENGINE"
 
 // alias
-module TZIP12 = CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.FA2.MultiAssetExtendable.TZIP12
+module TZIP12 = CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.TZIP12
 
 
 let get_initial_storage (a, b, c : nat * nat * nat) =
@@ -42,12 +42,6 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
     ((op1   , op3), Set.literal [2n]);
   ])
   in
-
-  // let token_info = (Map.empty: (string, bytes) map) in
-  // let token_data = {
-  //   token_id   = 0n;
-  //   token_info = token_info;
-  // } in
 
   let token_metadata = (Big_map.literal [
     (1n, ({token_id=1n;token_info=(Map.empty : (string, bytes) map);} : TZIP12.tokenMetadataData));

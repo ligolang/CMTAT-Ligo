@@ -4,6 +4,10 @@
 // #import "./balance_of_callback_contract.mligo" "Callback"
 #import "../helpers/balance_of_callback_contract.mligo" "Callback"
 
+
+// alias
+module TZIP12 = CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.TZIP12
+
 (* Tests for FA2 multi asset contract *)
 let get_initial_storage (a, b, c : nat * nat * nat) =
   let () = Test.reset_state 6n ([] : tez list) in
@@ -37,10 +41,10 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
   in
 
   let token_metadata = (Big_map.literal [
-    (1n, ({token_id=1n;token_info=(Map.empty : (string, bytes) map);} : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.tokenMetadataData));
-    (2n, ({token_id=2n;token_info=(Map.empty : (string, bytes) map);} : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.tokenMetadataData));
-    (3n, ({token_id=3n;token_info=(Map.empty : (string, bytes) map);} : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.tokenMetadataData));
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.tokenMetadata) in
+    (1n, ({token_id=1n;token_info=(Map.empty : (string, bytes) map);} : TZIP12.tokenMetadataData));
+    (2n, ({token_id=2n;token_info=(Map.empty : (string, bytes) map);} : TZIP12.tokenMetadataData));
+    (3n, ({token_id=3n;token_info=(Map.empty : (string, bytes) map);} : TZIP12.tokenMetadataData));
+  ] : TZIP12.tokenMetadata) in
 
 
  let metadata =Big_map.literal [
@@ -119,8 +123,8 @@ let test_atomic_transfer_success =
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=2n};] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
@@ -137,9 +141,9 @@ let test_transfer_token_undefined =
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=1n};{to_=owner3;amount=3n;token_id=2n}] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;amount=2n;token_id=0n};{to_=owner1;amount=3n;token_id=2n}] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=1n};{to_=owner3;amount=3n;token_id=2n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;amount=2n;token_id=0n};{to_=owner1;amount=3n;token_id=2n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
@@ -157,8 +161,8 @@ let test_atomic_transfer_failure_not_operator =
   let owner2 = List_helper.nth_exn 1 owners in
   let op3    = List_helper.nth_exn 2 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=2n};] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op3 in
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
@@ -176,8 +180,8 @@ let test_atomic_transfer_failure_not_suffient_balance =
   let owner2 = List_helper.nth_exn 1 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;amount=12n;token_id=2n};] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;amount=12n;token_id=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
@@ -196,9 +200,9 @@ let test_atomic_transfer_success_zero_amount_and_self_transfer =
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;amount=0n;token_id=1n};{to_=owner3;amount=0n;token_id=1n}] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner2;amount=2n;token_id=2n};] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;amount=0n;token_id=1n};{to_=owner3;amount=0n;token_id=1n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner2;amount=2n;token_id=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
@@ -214,8 +218,8 @@ let test_transfer_failure_transitive_operators =
   let owner3 = List_helper.nth_exn 2 owners in
   let op3    = List_helper.nth_exn 2 operators in
   let transfer_requests = ([
-    ({from_=owner3; txs=([{to_=owner2;amount=2n;token_id=2n};] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.transfer)
+    ({from_=owner3; txs=([{to_=owner2;amount=2n;token_id=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op3 in
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
@@ -235,9 +239,9 @@ let test_empty_transfer_and_balance_of =
   let callback_contract = Test.to_contract orig_callback.addr in
 
   let balance_of_requests = ({
-    requests = ([] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.request list);
+    requests = ([] : TZIP12.request list);
     callback = callback_contract;
-  } : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.balance_of) in
+  } : TZIP12.balance_of) in
 
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
 
@@ -259,9 +263,9 @@ let test_balance_of_token_undefines =
       {owner=owner1;token_id=0n};
       {owner=owner2;token_id=2n};
       {owner=owner1;token_id=1n};
-    ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.request list);
+    ] : TZIP12.request list);
     callback = callback_contract;
-  } : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.balance_of) in
+  } : TZIP12.balance_of) in
 
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
 
@@ -287,9 +291,9 @@ let test_balance_of_requests_with_duplicates =
       {owner=owner1;token_id=1n};
       {owner=owner2;token_id=2n};
       {owner=owner1;token_id=1n};
-    ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.request list);
+    ] : TZIP12.request list);
     callback = callback_contract;
-  } : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.balance_of) in
+  } : TZIP12.balance_of) in
 
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
 
@@ -313,9 +317,9 @@ let test_balance_of_0_balance_if_address_does_not_hold_tokens =
         {owner=owner1;token_id=1n};
         {owner=owner2;token_id=2n};
         {owner=op1;token_id=1n};
-      ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.request list);
+      ] : TZIP12.request list);
       callback = callback_contract;
-    } : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.balance_of) in
+    } : TZIP12.balance_of) in
 
     let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
 
@@ -344,13 +348,13 @@ let test_update_operator_remove_operator_and_transfer =
         owner    = owner1;
         operator = op1;
         token_id = 2n;
-      } : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.operator) : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.unit_update)
-    ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.update_operators)) 0tez in
+      } : TZIP12.operator) : TZIP12.unit_update)
+    ] : TZIP12.update_operators)) 0tez in
 
   let () = Test.set_source op1 in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=2n};] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let result = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
   match result with
@@ -375,13 +379,13 @@ let test_update_operator_add_operator_and_transfer =
         owner    = owner1;
         operator = op3;
         token_id = 2n;
-      } : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.operator) : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.unit_update);
-    ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.update_operators)) 0tez in
+      } : TZIP12.operator) : TZIP12.unit_update);
+    ] : TZIP12.update_operators)) 0tez in
 
   let () = Test.set_source op3 in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=2n};] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;amount=2n;token_id=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let _ = Test.transfer_exn orig.addr (Transfer transfer_requests) 0tez in
   ()
