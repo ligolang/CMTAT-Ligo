@@ -2,7 +2,7 @@
 | asset kind   |  progress |
 |--------------|-----------|
 | single_asset | 80% |
-| multi_asset  | 0% |
+| multi_asset  | 80% |
 | nft          | 0% |
 
 # CMTA Token
@@ -245,4 +245,25 @@ git clone https://github.com/ligolang/CMTAT-Ligo.git
 cd CMTAT-Ligo
 make install
 make test
+```
+
+To run test only one file. The SUITE env var can be set to point the test file. 
+For example, for the basic FA2 tests for a multi asset `SUITE=cmtat/SUITE=cmtat/extended_cmtat_multi_asset.fa2` points to `./test/cmtat/SUITE=cmtat/extended_cmtat_multi_asset.fa2.test.mligo`
+```
+make test SUITE=cmtat/extended_cmtat_multi_asset.fa2
+```
+
+To run tests on CMTAT features for a multi asset
+```
+make test SUITE=cmtat/extended_cmtat_multi_asset
+```
+
+To run tests on CMTAT features for a single asset
+```
+make test SUITE=cmtat/extended_cmtat_single_asset
+```
+
+To run tests on FA2 features for a single asset
+```
+make test SUITE=cmtat/extended_cmtat_single_asset.fa2
 ```
