@@ -1,23 +1,26 @@
 
 #import "@ligo/fa/lib/main.mligo" "FA2"
 #import "../modules/administration.mligo" "ADMINISTRATION"
-#import "../modules/single_asset/totalsupply.mligo" "TOTALSUPPLY"
+#import "../modules/multi_asset/totalsupply.mligo" "TOTALSUPPLY"
 #import "../modules/authorizations.mligo" "AUTHORIZATIONS"
-#import "../modules/single_asset/snapshots.mligo" "SNAPSHOTS"
+#import "../modules/multi_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 
-type ledger = FA2.SingleAssetExtendable.ledger
+module TZIP12 = FA2.MultiAssetExtendable.TZIP12
+module TZIP16 = FA2.MultiAssetExtendable.TZIP16
+
+type ledger = FA2.MultiAssetExtendable.ledger
 
 type operator = address
 
-type operators = FA2.SingleAssetExtendable.operators
+type operators = FA2.MultiAssetExtendable.operators
 
 type 'a storage =
 {
     ledger : ledger;
     operators : operators;
-    token_metadata : FA2.SingleAssetExtendable.TZIP12.tokenMetadata;
-    metadata : FA2.SingleAssetExtendable.TZIP16.metadata;
+    token_metadata : TZIP12.tokenMetadata;
+    metadata : FA2.MultiAssetExtendable.TZIP16.metadata;
     administration : ADMINISTRATION.t;
     totalsupplies: TOTALSUPPLY.t;
     authorizations: AUTHORIZATIONS.t;
@@ -29,7 +32,7 @@ type 'a storage =
 
 type 'a ret = operation list * 'a storage
 
-let transfer (type a) (tr : FA2.SingleAssetExtendable.TZIP12.transfer) (s : a storage) : a ret =
+let transfer (type a) (tr : TZIP12.transfer) (s : a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let () = ADMINISTRATION.assert_not_paused s.administration in
     let () = VALIDATION.assert_validateTransfer tr s.validation in
@@ -41,7 +44,7 @@ let transfer (type a) (tr : FA2.SingleAssetExtendable.TZIP12.transfer) (s : a st
         metadata=s.metadata;
         extension=s.extension;
     } in
-    let ops, new_storage = FA2.SingleAssetExtendable.transfer tr sub_fa2_storage in
+    let ops, new_storage = FA2.MultiAssetExtendable.transfer tr sub_fa2_storage in
     ops, {s with 
         ledger = new_storage.ledger;
         operators = new_storage.operators;
@@ -50,7 +53,7 @@ let transfer (type a) (tr : FA2.SingleAssetExtendable.TZIP12.transfer) (s : a st
         snapshots = new_snapshots;
     }
 
-let balance_of (type a) (b : FA2.SingleAssetExtendable.TZIP12.balance_of) (s : a storage) : a ret =
+let balance_of (type a) (b : TZIP12.balance_of) (s : a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sub_fa2_storage = {
         ledger=s.ledger; 
@@ -59,7 +62,7 @@ let balance_of (type a) (b : FA2.SingleAssetExtendable.TZIP12.balance_of) (s : a
         metadata=s.metadata;
         extension=s.extension;
     } in
-    let ops, new_storage = FA2.SingleAssetExtendable.balance_of b sub_fa2_storage in
+    let ops, new_storage = FA2.MultiAssetExtendable.balance_of b sub_fa2_storage in
     ops, {s with 
         ledger = new_storage.ledger;
         operators = new_storage.operators;
@@ -67,7 +70,7 @@ let balance_of (type a) (b : FA2.SingleAssetExtendable.TZIP12.balance_of) (s : a
         metadata = new_storage.metadata;
     }
 
-let update_operators (type a) (updates : FA2.SingleAssetExtendable.TZIP12.update_operators) (s : a storage) : a ret =
+let update_operators (type a) (updates : TZIP12.update_operators) (s : a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sub_fa2_storage = {
         ledger=s.ledger; 
@@ -76,7 +79,7 @@ let update_operators (type a) (updates : FA2.SingleAssetExtendable.TZIP12.update
         metadata=s.metadata;
         extension=s.extension;
     } in
-    let ops, new_storage = FA2.SingleAssetExtendable.update_operators updates sub_fa2_storage in
+    let ops, new_storage = FA2.MultiAssetExtendable.update_operators updates sub_fa2_storage in
     ops, {s with 
         ledger = new_storage.ledger;
         operators = new_storage.operators;
@@ -93,9 +96,9 @@ let get_balance (type a) (p : (address * nat)) (s : a storage) : nat =
         metadata=s.metadata;
         extension=s.extension;
     } in
-    FA2.SingleAssetExtendable.get_balance p sub_fa2_storage
+    FA2.MultiAssetExtendable.get_balance p sub_fa2_storage
 
-let total_supply (type a) (_token_id : nat) (s : a storage) : nat =
+let total_supply (type a) (token_id : nat) (s : a storage) : nat =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     //    let sub_fa2_storage = {
     //     ledger=s.ledger; 
@@ -104,8 +107,9 @@ let total_supply (type a) (_token_id : nat) (s : a storage) : nat =
     //     metadata=s.metadata;
     //     extension=s.extension;
     // } in
-    TOTALSUPPLY.get_total_supply s.totalsupplies
-    // FA2.SingleAssetExtendable.total_supply token_id sub_fa2_storage
+    // get_total_supply_curried(s.totalsupplies, token_id)
+    TOTALSUPPLY.get_total_supply s.totalsupplies token_id
+    // FA2.MultiAssetExtendable.total_supply token_id sub_fa2_storage
 
 let all_tokens (type a) (_ : unit) (s : a storage) : nat set =
     let () = ADMINISTRATION.assert_not_killed s.administration in
@@ -116,9 +120,9 @@ let all_tokens (type a) (_ : unit) (s : a storage) : nat set =
         metadata=s.metadata;
         extension=s.extension;
     } in
-    FA2.SingleAssetExtendable.all_tokens () sub_fa2_storage
+    FA2.MultiAssetExtendable.all_tokens () sub_fa2_storage
 
-let is_operator (type a) (op : FA2.SingleAssetExtendable.TZIP12.operator) (s : a storage) : bool =
+let is_operator (type a) (op : FA2.MultiAssetExtendable.TZIP12.operator) (s : a storage) : bool =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sub_fa2_storage = {
         ledger=s.ledger; 
@@ -127,9 +131,9 @@ let is_operator (type a) (op : FA2.SingleAssetExtendable.TZIP12.operator) (s : a
         metadata=s.metadata;
         extension=s.extension;
     } in
-    FA2.SingleAssetExtendable.is_operator op sub_fa2_storage
+    FA2.MultiAssetExtendable.is_operator op sub_fa2_storage
 
-let token_metadata (type a) (p : nat) (s : a storage) : FA2.SingleAssetExtendable.TZIP12.tokenMetadataData =
+let token_metadata (type a) (p : nat) (s : a storage) : FA2.MultiAssetExtendable.TZIP12.tokenMetadataData =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sub_fa2_storage = {
         ledger=s.ledger; 
@@ -138,7 +142,7 @@ let token_metadata (type a) (p : nat) (s : a storage) : FA2.SingleAssetExtendabl
         metadata=s.metadata;
         extension=s.extension;
     } in
-    FA2.SingleAssetExtendable.token_metadata p sub_fa2_storage
+    FA2.MultiAssetExtendable.token_metadata p sub_fa2_storage
 
 
 
@@ -166,8 +170,8 @@ let mint (type a)  (p: mint_param) (s: a storage) : a ret =
     let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, MINTER) s.authorizations)) AUTHORIZATIONS.Errors.not_minter in
     let { recipient; token_id; amount } = p in
     let new_snapshots = SNAPSHOTS.update_atomic (None, Some(recipient), amount, token_id) s.ledger s.totalsupplies s.snapshots in
-    let new_ledger = FA2.SingleAssetExtendable.increase_token_amount_for_user s.ledger recipient amount in
-    let new_total = TOTALSUPPLY.increase_token_total_supply s.totalsupplies amount in
+    let new_ledger = FA2.MultiAssetExtendable.increase_token_amount_for_user s.ledger recipient token_id amount in
+    let new_total = TOTALSUPPLY.increase_token_total_supply s.totalsupplies token_id amount in
     ([]: operation list), { s with 
             ledger = new_ledger; 
             totalsupplies = new_total;
@@ -186,8 +190,8 @@ let burn (type a) (p: burn_param) (s: a storage) : a ret =
     let sender = Tezos.get_sender() in
     let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, BURNER) s.authorizations)) AUTHORIZATIONS.Errors.not_burner in
     let new_snapshots = SNAPSHOTS.update_atomic (Some(recipient), None, amount, token_id) s.ledger s.totalsupplies s.snapshots in
-    let new_ledger = FA2.SingleAssetExtendable.decrease_token_amount_for_user s.ledger recipient amount in
-    let new_total = TOTALSUPPLY.decrease_token_total_supply s.totalsupplies amount in
+    let new_ledger = FA2.MultiAssetExtendable.decrease_token_amount_for_user s.ledger recipient token_id amount in
+    let new_total = TOTALSUPPLY.decrease_token_total_supply s.totalsupplies token_id amount in
     ([]: operation list), { s with 
             ledger = new_ledger; 
             totalsupplies = new_total;
@@ -252,7 +256,7 @@ let kill (type a) (_p: unit) (s: a storage) : a ret =
       token_metadata = Big_map.empty;
       operators      = Big_map.empty;
       administration = { s.administration with paused = true; killed = true };
-      totalsupplies  = 0n; //Big_map.literal([(0n, a + b + c)]);
+      totalsupplies  = Big_map.empty;
       authorizations = Big_map.empty;
       snapshots = {
         account_snapshots = Big_map.empty;

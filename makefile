@@ -25,6 +25,7 @@ compile: ## compile contracts
 	@$(call compile,../test/cmtat/extended_cmtat_single_asset.instance.mligo,cmtat/extended_cmtat_single_asset.mligo.tz)
 	@$(call compile,../test/cmtat/extended_cmtat_single_asset.instance.mligo,cmtat/extended_cmtat_single_asset.mligo.json,--michelson-format json)
 
+	@$(call compile,../test/cmtat/extended_cmtat_multi_asset.instance.mligo,cmtat/extended_cmtat_multiple_asset.mligo.tz)
 	@echo "Compiled contracts!"
 clean: ## clean up
 	@rm -rf compiled
@@ -51,7 +52,8 @@ ifndef SUITE
 	@$(call test,cmtat/extended_cmtat_single_asset.fa2.test.mligo)
 	@$(call test,cmtat/extended_cmtat_single_asset.test.mligo)
 
-
+	@$(call test,cmtat/extended_cmtat_multi_asset.fa2.test.mligo)
+	@$(call test,cmtat/extended_cmtat_multi_asset.test.mligo)
 ##  @$(call test,fa2/nft/e2e_mutation.test.mligo)
 else
 	@$(call test,$(SUITE).test.mligo)
