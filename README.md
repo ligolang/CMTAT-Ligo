@@ -3,7 +3,11 @@
 |--------------|-----------|
 | single_asset | 80% |
 | multi_asset  | 80% |
-| nft          | 0% |
+| nft          | 50% |
+
+- module snapshot for NFT must be reworked
+- module totalsupply for NFT must be reworked
+
 
 # CMTA Token
 
@@ -266,4 +270,9 @@ make test SUITE=cmtat/extended_cmtat_single_asset
 To run tests on FA2 features for a single asset
 ```
 make test SUITE=cmtat/extended_cmtat_single_asset.fa2
+```
+
+To run tests on CMTAT features for a NFT
+```
+make test SUITE=cmtat/extended_cmtat_nft_asset
 ```
