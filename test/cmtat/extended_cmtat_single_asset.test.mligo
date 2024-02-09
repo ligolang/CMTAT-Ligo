@@ -9,8 +9,8 @@
 #import "../helpers/rule_engine_contract.mligo" "RULE_ENGINE"
 
 
-let get_initial_storage (a, b, c : nat * nat * nat) =
-  let () = Test.reset_state 6n ([] : tez list) in
+let get_initial_storage_ (a, b, c : nat * nat * nat) =
+  // let () = Test.reset_state 6n ([] : tez list) in
 
   let owner1 = Test.nth_bootstrap_account 0 in
   let owner2 = Test.nth_bootstrap_account 1 in
@@ -87,8 +87,18 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
         issuer = op2;
       }
   } in
-
   initial_storage, owners, ops
+
+
+let get_initial_storage (a, b, c : nat * nat * nat) = 
+  let () = Test.reset_state 6n ([] : tez list) in
+  get_initial_storage_ (a,b,c)
+
+let get_initial_storage_at (time: timestamp) (a, b, c : nat * nat * nat) = 
+  let () = Test.reset_state_at time 6n ([] : tez list) in
+  get_initial_storage_ (a,b,c)
+
+
 
 let assert_balances
   (contract_address : (CMTAT_single_asset parameter_of, CMTAT_single_asset.storage) typed_address )
@@ -1286,6 +1296,13 @@ let test_snapshot_balanceof_view_success =
   | None -> failwith "Wrong setup ? owner1 has no balance"
   in
 
+  // Call View of Caller contract
+  // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract (with timestamp_0)
+  let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_0, owner1, 0n)) 0tez in
+  let storage_caller = Test.get_storage orig_caller.addr in
+  let () = assert(storage_caller = owner1_balance_before_mint) in
+
+
   // MINT (with admin)
   let () = Test.set_source initial_storage.administration.admin in
   let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param)
@@ -1295,13 +1312,16 @@ let test_snapshot_balanceof_view_success =
   let () = assert_totalsupply orig.addr 32n in
 
   // Call View of Caller contract
- // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract
+  // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract (with timestamp_0)
   let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_0, owner1, 0n)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
   let () = assert(storage_caller = owner1_balance_before_mint) in
+
+  // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract (with timestamp after timestamp_0)
+  let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_0 + 10, owner1, 0n)) 0tez in
+  let storage_caller = Test.get_storage orig_caller.addr in
+  let () = assert(storage_caller = 12n) in
   ()
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 //          VALIDATION (RULE_ENGINE)
