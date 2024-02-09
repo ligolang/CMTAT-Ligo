@@ -7,7 +7,11 @@ module TZIP12 = FA2.NFTExtendable.TZIP12
 
 type snapshot_data = nat
 
-type snapshots = ((timestamp * nat), snapshot_data) map
+// TODO 
+// should be ???
+type snapshots = (timestamp, nat set) map
+
+//type snapshots = ((timestamp * nat), snapshot_data) map
 
 type t = {
     account_snapshots : (address, snapshots) big_map;
@@ -136,20 +140,20 @@ let getNextSnapshots (snapshots:t) : timestamp list =
 
 // If there is a scheduled snapshot for the given time returns totalsupply of the snapshot otherwise returns the current totalsupply
 let snapshotTotalsupply (time : timestamp) (token_id: nat) (totalsupplies: TOTALSUPPLY.t)  (snapshots:t) : nat =
-    match Map.find_opt (time, token_id) snapshots.totalsupply_snapshots with
+    match Map.find_opt time snapshots.totalsupply_snapshots with
     | None -> (match (Big_map.find_opt token_id totalsupplies) with
         | Some(actual) -> actual
         | None -> 0n)
-    | Some(v) -> v
+    | Some(ids) -> if Set.mem token_id ids then 1n else 0n
 
 // If there is a scheduled snapshot for the given time returns balance of the snapshot otherwise returns the current user balance
 let snapshotBalanceOf (time : timestamp) (user: address) (token_id: nat) (ledger: FA2.NFTExtendable.ledger) (snapshots:t) : nat =
     match Big_map.find_opt user snapshots.account_snapshots with
     | None -> get_for_user_curried(ledger, user, token_id)
     | Some(snaps) -> 
-        let value = match Map.find_opt (time, token_id) snaps with
+        let value = match Map.find_opt time snaps with
         | None -> get_for_user_curried(ledger, user, token_id)
-        | Some (v) -> v
+        | Some (ids) -> if Set.mem token_id ids then 1n else 0n
         in value
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -158,16 +162,25 @@ let snapshotBalanceOf (time : timestamp) (user: address) (token_id: nat) (ledger
 let update_account_snapshot (current_scheduled_snapshot: timestamp) (token_id: nat) (account: address) (account_balance: nat) (snapshots: t) : t = 
     let new_account_snapshots = match Big_map.find_opt account snapshots.account_snapshots with
     | Some(snaps) -> 
-        let new_snaps = Map.update (current_scheduled_snapshot, token_id) (Some(account_balance)) snaps in
+        let new_current_snaps = match Map.find_opt current_scheduled_snapshot snaps with
+        | None -> Set.empty
+        | Some(ids) -> if account_balance = 0n then Set.remove token_id ids else Set.add token_id ids
+        in
+        let new_snaps = Map.update current_scheduled_snapshot (Some(new_current_snaps)) snaps in
         Big_map.update account (Some(new_snaps)) snapshots.account_snapshots
     | None() -> 
-        let snaps = Map.literal([((current_scheduled_snapshot, token_id), account_balance)]) in
+        let new_current_snaps = if account_balance = 0n then Set.empty else Set.add token_id Set.empty in
+        let snaps = Map.literal([(current_scheduled_snapshot, new_current_snaps)]) in
         Big_map.add account snaps snapshots.account_snapshots
     in
     { snapshots with account_snapshots = new_account_snapshots }
 
 let update_totalsupply_snapshot (current_scheduled_snapshot: timestamp) (token_id: nat) (totalsupply_balance: nat) (snapshots: t) : t = 
-    let new_totalsupply_snapshots = Map.update (current_scheduled_snapshot, token_id) (Some(totalsupply_balance)) snapshots.totalsupply_snapshots in
+    let new_ids = match Map.find_opt current_scheduled_snapshot snapshots.totalsupply_snapshots with
+    | None -> if totalsupply_balance = 0n then Set.empty else Set.add token_id Set.empty
+    | Some (ids) -> if totalsupply_balance = 0n then Set.remove token_id ids else Set.add token_id ids
+    in
+    let new_totalsupply_snapshots = Map.update current_scheduled_snapshot (Some(new_ids)) snapshots.totalsupply_snapshots in
     { snapshots with totalsupply_snapshots = new_totalsupply_snapshots }
 
 let get_current_scheduled_snapshot (snapshots:t) : timestamp option =

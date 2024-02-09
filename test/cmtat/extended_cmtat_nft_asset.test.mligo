@@ -84,8 +84,8 @@ let assert_account_snapshot
     let storage = Test.get_storage contract_address in
     let () = match Big_map.find_opt owner1 storage.snapshots.account_snapshots with
     | Some(snaps) -> 
-        let () = match Map.find_opt (time, token_id_1) snaps with
-        | Some (v) -> assert(balance1 = v)
+        let () = match Map.find_opt time snaps with
+        | Some (ids) -> if balance1 = 0n then assert(Set.mem token_id_1 ids = false) else assert(Set.mem token_id_1 ids = true)
         | None -> failwith "Account does not have a snapshot for this time"
         in
         ()
@@ -93,8 +93,8 @@ let assert_account_snapshot
     in
     let () = match Big_map.find_opt owner2 storage.snapshots.account_snapshots with
     | Some(snaps) -> 
-        let () = match Map.find_opt (time, token_id_2) snaps with
-        | Some (v) -> assert(balance2 = v)
+        let () = match Map.find_opt time snaps with
+        | Some (ids) -> if balance2 = 0n then assert(Set.mem token_id_2 ids = false) else assert(Set.mem token_id_2 ids = true)
         | None -> failwith "Account does not have a snapshot for this time"
         in
         ()
@@ -102,8 +102,8 @@ let assert_account_snapshot
     in
     let () = match Big_map.find_opt owner3 storage.snapshots.account_snapshots with
     | Some(snaps) -> 
-        let () = match Map.find_opt (time, token_id_3) snaps with
-        | Some (v) -> assert(balance3= v)
+        let () = match Map.find_opt time snaps with
+        | Some (ids) -> if balance3 = 0n then assert(Set.mem token_id_3 ids = false) else assert(Set.mem token_id_3 ids = true)
         | None -> failwith "Account does not have a snapshot for this time"
         in
         ()
@@ -136,8 +136,8 @@ let assert_totalsupply_snapshot
   (token_id: nat)
   (expected: nat) =
     let storage = Test.get_storage contract_address in
-    let () = match Map.find_opt (time, token_id) storage.snapshots.totalsupply_snapshots with
-    | Some (v) -> assert(expected = v)
+    let () = match Map.find_opt time storage.snapshots.totalsupply_snapshots with
+    | Some (ids) -> if expected = 0n then assert(Set.mem token_id ids = false) else assert(Set.mem token_id ids = true)
     | None -> failwith "No total supply snapshot for this time"
     in
     ()
