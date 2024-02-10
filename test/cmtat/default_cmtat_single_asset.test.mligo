@@ -60,6 +60,12 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
 }|}]);
 ]  in
 
+
+  let minter_role : CMTAT_single_asset.Token.AUTHORIZATIONS.role = MINTER in
+  let burner_role : CMTAT_single_asset.Token.AUTHORIZATIONS.role = BURNER in
+  let profil_minter : CMTAT_single_asset.Token.AUTHORIZATIONS.role set =  Set.add minter_role Set.empty in
+  let profil_burner : CMTAT_single_asset.Token.AUTHORIZATIONS.role set =  Set.add burner_role Set.empty in
+
   let initial_storage: CMTAT_single_asset.storage = {
       ledger         = ledger;
       metadata       = metadata;
@@ -67,7 +73,7 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       operators      = operators;
       administration = { admin = owner1; paused = false; killed = false };
       totalsupplies  = a + b + c;
-      authorizations = Big_map.empty;
+      authorizations = Big_map.literal([(op2, profil_burner); (op3, profil_minter)]);
       snapshots = {
         account_snapshots = Big_map.empty;
         totalsupply_snapshots = Map.empty;
@@ -128,12 +134,14 @@ let test_mint_success =
   let owner2 = List_helper.nth_exn 1 owners in
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
   
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
 
+  // MINT (with minter)
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param) in
-  let () = Test.set_source owner1 in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
   let () = assert_balances orig.addr ((owner1, 12n), (owner2, 10n), (owner3, 10n)) in
   ()
@@ -145,11 +153,13 @@ let test_burn_success =
   let owner2 = List_helper.nth_exn 1 owners in
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
   
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
-  let () = Test.set_source owner1 in
-  let burn_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.burn_param) in
+
+  // BURN (with burner)
+  let () = Test.set_source op2 in  let burn_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.burn_param) in
   let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
   let () = assert_balances orig.addr ((owner1, 8n), (owner2, 10n), (owner3, 10n)) in
   ()

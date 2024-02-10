@@ -167,7 +167,7 @@ type mint_param = {
 let mint (type a)  (p: mint_param) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, MINTER) s.authorizations)) AUTHORIZATIONS.Errors.not_minter in
+    let () = assert_with_error (AUTHORIZATIONS.hasRole (sender, MINTER) s.authorizations) AUTHORIZATIONS.Errors.not_minter in
     let { recipient; token_id; amount } = p in
     let new_snapshots = SNAPSHOTS.update_atomic (None, Some(recipient), amount, token_id) s.ledger s.totalsupplies s.snapshots in
     let new_ledger = FA2.MultiAssetExtendable.increase_token_amount_for_user s.ledger recipient token_id amount in
@@ -188,7 +188,7 @@ let burn (type a) (p: burn_param) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let { recipient; token_id; amount } = p in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, BURNER) s.authorizations)) AUTHORIZATIONS.Errors.not_burner in
+    let () = assert_with_error (AUTHORIZATIONS.hasRole (sender, BURNER) s.authorizations) AUTHORIZATIONS.Errors.not_burner in
     let new_snapshots = SNAPSHOTS.update_atomic (Some(recipient), None, amount, token_id) s.ledger s.totalsupplies s.snapshots in
     let new_ledger = FA2.MultiAssetExtendable.decrease_token_amount_for_user s.ledger recipient token_id amount in
     let new_total = TOTALSUPPLY.decrease_token_total_supply s.totalsupplies token_id amount in

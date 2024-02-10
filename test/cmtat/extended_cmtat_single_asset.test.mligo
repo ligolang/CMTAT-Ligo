@@ -513,6 +513,7 @@ let test_totalsupply_view_success =
   let owner2 = List_helper.nth_exn 1 owners in
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
   // ORIGINATION CALLER
   let () = Test.set_source op1 in
   let orig_caller = Test.originate (contract_of Caller) 0n 0tez in
@@ -523,8 +524,14 @@ let test_totalsupply_view_success =
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
   let contr = Test.to_contract orig.addr in 
   let fa2_address : address = Tezos.address contr in
-  // MINT (with admin)
+
+  // GRANT op3 the role Minter
   let () = Test.set_source initial_storage.administration.admin in
+  let flag : CMTAT_single_asset.Token.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
+  let () = assert_role orig.addr op3 flag in
+  // MINT (with minter)
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
@@ -605,7 +612,7 @@ let test_tokenmetadata_view_success =
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        MINT
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-let test_mint_success_with_admin =
+let test_mint_failure_with_admin =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
   let owner2 = List_helper.nth_exn 1 owners in
@@ -618,9 +625,10 @@ let test_mint_success_with_admin =
   let () = Test.set_source initial_storage.administration.admin in
   let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param)
   in
-  let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
-  let () = assert_balances orig.addr ((owner1, 12n), (owner2, 10n), (owner3, 10n)) in
-  let () = assert_totalsupply orig.addr 32n in
+  let r = Test.transfer orig.addr (Mint mint_request) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.AUTHORIZATIONS.Errors.not_minter in
+  let () = assert_balances orig.addr ((owner1, 10n), (owner2, 10n), (owner3, 10n)) in
+  let () = assert_totalsupply orig.addr 30n in
   ()
 
 let test_mint_success_with_minter =
@@ -671,7 +679,7 @@ let test_mint_failure_not_minter =
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        BURN
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-let test_burn_success_with_admin =
+let test_burn_failure_with_admin =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
   let owner2 = List_helper.nth_exn 1 owners in
@@ -682,9 +690,10 @@ let test_burn_success_with_admin =
   // BURN (with admin)
   let burn_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.burn_param)
   in
-  let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
-  let () = assert_balances orig.addr ((owner1, 8n), (owner2, 10n), (owner3, 10n)) in
-  let () = assert_totalsupply orig.addr 28n in
+  let r = Test.transfer orig.addr (Burn burn_request) 0tez in
+  let () = string_failure r  CMTAT_single_asset.Token.AUTHORIZATIONS.Errors.not_burner in
+  let () = assert_balances orig.addr ((owner1, 10n), (owner2, 10n), (owner3, 10n)) in
+  let () = assert_totalsupply orig.addr 30n in
   ()
 
 let test_burn_success_with_burner =
@@ -734,15 +743,21 @@ let test_burn_failure_not_enough =
   let _owner2 = List_helper.nth_exn 1 owners in
   let _owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
-  // BURN (with admin)
-  let () = Test.set_source op1 in
+
+  // GRANT op3 the role Burner
+  let contr = Test.to_contract orig.addr in
+  let flag : CMTAT_single_asset.Token.AUTHORIZATIONS.role = BURNER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
+  let () = assert_role orig.addr op3 flag in
+  // BURN (with burner)
+  let () = Test.set_source op3 in
   let burn_request = ({ recipient=owner1; token_id=0n; amount=12n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.burn_param)
   in
   let r = Test.transfer orig.addr (Burn burn_request) 0tez in
   let () = string_failure r  CMTAT_single_asset.Token.FA2.SingleAssetExtendable.Errors.ins_balance in
-  // let () = string_failure r  CMTAT_single_asset.Token.TOTALSUPPLY.Errors.not_enough_supply in
   let () = assert_totalsupply orig.addr 30n in
   ()
 
@@ -908,6 +923,7 @@ let test_mint_with_scheduled_snapshot_success =
   let _owner2 = List_helper.nth_exn 1 owners in
   let _owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
 
@@ -915,6 +931,13 @@ let test_mint_with_scheduled_snapshot_success =
   let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
 
+  // GRANT op3 the role Minter
+  let contr = Test.to_contract orig.addr in
+  let flag : CMTAT_single_asset.Token.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
+  let () = assert_role orig.addr op3 flag in
+  // MINT (with minter)
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param) in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
   
@@ -929,6 +952,8 @@ let test_burn_with_scheduled_snapshot_success =
   let _owner2 = List_helper.nth_exn 1 owners in
   let _owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
+
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
 
@@ -936,6 +961,14 @@ let test_burn_with_scheduled_snapshot_success =
   let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
 
+
+  // GRANT op3 the role Burner
+  let contr = Test.to_contract orig.addr in
+  let flag : CMTAT_single_asset.Token.AUTHORIZATIONS.role = BURNER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
+  let () = assert_role orig.addr op3 flag in
+  // BURN (with burner)
+  let () = Test.set_source op3 in
   let burn_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.burn_param) in
   let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
   
@@ -1170,20 +1203,29 @@ let test_unschedule_snapshot_failure_no_scheduled =
   let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.no_snapshot_scheduled in
   ()
 
-// let test_unschedule_snapshot_failure_in_past =
-//   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
-//   let _owner1 = List_helper.nth_exn 0 owners in
-//   let _owner2 = List_helper.nth_exn 1 owners in
-//   let _owner3 = List_helper.nth_exn 2 owners in
-//   let op1    = List_helper.nth_exn 0 operators in
-//   let () = Test.set_source op1 in
-//   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+let test_unschedule_snapshot_failure_in_past =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
 
-//   let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
-//   let () = assert_no_scheduled_snapshot orig.addr snapshot_time_0 in
-//   let r = Test.transfer orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
-//   let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.no_snapshot_scheduled in
-//   ()
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_snapshooter : CMTAT_single_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
+  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+
+  let () = Test.set_source owner1 in
+  let snapshot_time_0 = ("1970-01-01t00:30:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let () = Test.bake_until_n_cycle_end 1n in
+
+  let r = Test.transfer orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.snapshot_already_done in
+  ()
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1229,6 +1271,7 @@ let test_snapshot_totalsupply_view_success =
   let owner2 = List_helper.nth_exn 1 owners in
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
   // ORIGINATION CALLER
   let () = Test.set_source op1 in
   let orig_caller = Test.originate (contract_of Caller_SNAPSHOTTOTALSUPPLY) 0n 0tez in
@@ -1250,8 +1293,14 @@ let test_snapshot_totalsupply_view_success =
   let storage = Test.get_storage orig.addr in
   let totalsupply_before_mint = storage.totalsupplies in
 
-  // MINT (with admin)
   let () = Test.set_source initial_storage.administration.admin in
+  // GRANT op3 the role Minter
+  let contr = Test.to_contract orig.addr in
+  let flag : CMTAT_single_asset.Token.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
+  let () = assert_role orig.addr op3 flag in
+  // MINT (with minter)
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
@@ -1272,6 +1321,8 @@ let test_snapshot_balanceof_view_success =
   let owner2 = List_helper.nth_exn 1 owners in
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
+
   // ORIGINATION CALLER
   let () = Test.set_source op1 in
   let orig_caller = Test.originate (contract_of Caller_SNAPSHOTBALANCEOF) 0n 0tez in
@@ -1302,9 +1353,14 @@ let test_snapshot_balanceof_view_success =
   let storage_caller = Test.get_storage orig_caller.addr in
   let () = assert(storage_caller = owner1_balance_before_mint) in
 
-
-  // MINT (with admin)
   let () = Test.set_source initial_storage.administration.admin in
+  // GRANT op3 the role Minter
+  let contr = Test.to_contract orig.addr in
+  let flag : CMTAT_single_asset.Token.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
+  let () = assert_role orig.addr op3 flag in
+  // MINT (with minter)
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=0n; amount=2n } : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in

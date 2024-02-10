@@ -72,6 +72,10 @@ let get_initial_storage () =
 }|}]);
 ] in
 
+  let minter_role : CMTAT_nft_asset.Token.AUTHORIZATIONS.role = MINTER in
+  let burner_role : CMTAT_nft_asset.Token.AUTHORIZATIONS.role = BURNER in
+  let profil_minter : CMTAT_nft_asset.Token.AUTHORIZATIONS.role set =  Set.add minter_role Set.empty in
+  let profil_burner : CMTAT_nft_asset.Token.AUTHORIZATIONS.role set =  Set.add burner_role Set.empty in
 
   let initial_storage : CMTAT_nft_asset.storage = {
     // ledger         = ledger;
@@ -85,7 +89,7 @@ let get_initial_storage () =
       operators      = operators;
       administration = { admin = op1; paused = false; killed = false };
       totalsupplies  = Big_map.literal([(1n, 1n); (2n, 1n); (3n, 1n); (4n, 1n); (5n, 1n)]);
-      authorizations = Big_map.empty;
+      authorizations = Big_map.literal([(op2, profil_burner); (op3, profil_minter)]);
       snapshots = {
         account_snapshots = Big_map.empty;
         totalsupply_snapshots = Map.empty;
