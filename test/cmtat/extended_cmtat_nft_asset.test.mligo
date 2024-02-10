@@ -420,6 +420,8 @@ let test_totalsupply_view_success =
   let owner3 = List_helper.nth_exn 2 owners in
 	let _owner4 = List_helper.nth_exn 3 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
+
   // ORIGINATION CALLER
   let () = Test.set_source op1 in
   let orig_caller = Test.originate (contract_of Caller) 0n 0tez in
@@ -430,8 +432,8 @@ let test_totalsupply_view_success =
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
   let contr = Test.to_contract orig.addr in 
   let fa2_address : address = Tezos.address contr in
-  // MINT (with admin)
-  let () = Test.set_source initial_storage.administration.admin in
+  // MINT
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=6n; token_info={token_id=6n;token_info=(Map.empty : (string, bytes) map)} } : CMTAT_nft_asset.Token.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
@@ -512,11 +514,11 @@ let test_tokenmetadata_view_success =
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        MINT
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-let test_mint_success_with_admin =
+let test_mint_failure_with_admin =
   let initial_storage, owners, operators = TestHelpers.get_initial_storage () in
   let owner1 = List_helper.nth_exn 0 owners in
-  let owner2 = List_helper.nth_exn 1 owners in
-  let owner3 = List_helper.nth_exn 2 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
 	let _owner4 = List_helper.nth_exn 3 owners in
   let op1    = List_helper.nth_exn 0 operators in
   // ORIGINATION
@@ -526,9 +528,8 @@ let test_mint_success_with_admin =
   let () = Test.set_source initial_storage.administration.admin in
   let mint_request = ({ recipient=owner1; token_id=6n; token_info={token_id=6n;token_info=(Map.empty : (string, bytes) map)} } : CMTAT_nft_asset.Token.mint_param)
   in
-  let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
-  let () = TestHelpers.assert_balances orig.addr ((owner1, 6n), (owner2, 2n), (owner3, 3n)) in
-  let () = assert_totalsupply orig.addr 6n 1n in
+  let r = Test.transfer orig.addr (Mint mint_request) 0tez in
+  let () = string_failure r CMTAT_nft_asset.Token.AUTHORIZATIONS.Errors.not_minter in
   ()
 
 let test_mint_success_with_minter =
@@ -543,12 +544,7 @@ let test_mint_success_with_minter =
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
 
-  // GRANT op3 the role Minter
-  let contr = Test.to_contract orig.addr in
-  let flag : CMTAT_nft_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
-  let () = assert_role orig.addr op3 flag in
-  // MINT (with minter)
+  // MINT 
   let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=6n; token_info={token_id=6n;token_info=(Map.empty : (string, bytes) map)} } : CMTAT_nft_asset.Token.mint_param)
   in
@@ -565,12 +561,12 @@ let test_mint_failure_not_minter =
   let owner3 = List_helper.nth_exn 2 owners in
 	let _owner4 = List_helper.nth_exn 3 owners in
   let op1    = List_helper.nth_exn 0 operators in
-  let op3    = List_helper.nth_exn 2 operators in
+  let op2    = List_helper.nth_exn 1 operators in
   // ORIGINATION
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
   // MINT (fails with not minter)
-  let () = Test.set_source op3 in
+  let () = Test.set_source op2 in
   let mint_request = ({ recipient=owner1; token_id=6n; token_info={token_id=6n;token_info=(Map.empty : (string, bytes) map)} } : CMTAT_nft_asset.Token.mint_param)
   in
   let r = Test.transfer orig.addr (Mint mint_request) 0tez in
@@ -583,22 +579,22 @@ let test_mint_failure_not_minter =
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        BURN
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-let test_burn_success_with_admin =
+let test_burn_failure_with_admin =
   let initial_storage, owners, operators = TestHelpers.get_initial_storage () in
   let owner1 = List_helper.nth_exn 0 owners in
-  let owner2 = List_helper.nth_exn 1 owners in
-  let owner3 = List_helper.nth_exn 2 owners in
-	let owner4 = List_helper.nth_exn 3 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let _owner4 = List_helper.nth_exn 3 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let _op2    = List_helper.nth_exn 1 operators in
+
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
   // BURN (with admin)
   let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_nft_asset.Token.burn_param)
   in
-  let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
-  let () = TestHelpers.assert_balances orig.addr ((owner4, 4n), (owner2, 2n), (owner3, 3n)) in
-  let () = assert_not_owned orig.addr 1n in
-  let () = assert_totalsupply orig.addr 1n 0n in
+  let r = Test.transfer orig.addr (Burn burn_request) 0tez in
+  let () = string_failure r  CMTAT_nft_asset.Token.AUTHORIZATIONS.Errors.not_burner in
   ()
 
 let test_burn_success_with_burner =
@@ -608,16 +604,11 @@ let test_burn_success_with_burner =
   let owner3 = List_helper.nth_exn 2 owners in
 	let owner4 = List_helper.nth_exn 3 owners in
   let op1    = List_helper.nth_exn 0 operators in
-  let op3    = List_helper.nth_exn 2 operators in
+  let op2    = List_helper.nth_exn 1 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
-  // GRANT op3 the role Burner
-  let contr = Test.to_contract orig.addr in
-  let flag : CMTAT_nft_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
-  let () = assert_role orig.addr op3 flag in
-  // BURN (with burner)
-  let () = Test.set_source op3 in
+  // BURN 
+  let () = Test.set_source op2 in
   let burn_request = ({ recipient=owner1; token_id=1n; amount=1n } : CMTAT_nft_asset.Token.burn_param)
   in
   let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
@@ -635,7 +626,7 @@ let test_burn_failure_not_burner =
   let op3    = List_helper.nth_exn 2 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
-  // BURN (with burner)
+  // BURN (with not burner)
   let () = Test.set_source op3 in
   let burn_request = ({ recipient=owner1; token_id=1n; amount=1n } : CMTAT_nft_asset.Token.burn_param)
   in
@@ -650,10 +641,11 @@ let test_burn_failure_unknown_token =
   let _owner2 = List_helper.nth_exn 1 owners in
   let _owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
-  // BURN (with admin)
-  let () = Test.set_source op1 in
+  // BURN 
+  let () = Test.set_source op2 in
   let burn_request = ({ recipient=owner1; token_id=6n; amount=1n } : CMTAT_nft_asset.Token.burn_param)
   in
   let r = Test.transfer orig.addr (Burn burn_request) 0tez in
@@ -823,6 +815,7 @@ let test_mint_with_scheduled_snapshot_success =
   let _owner2 = List_helper.nth_exn 1 owners in
   let _owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
 
@@ -830,6 +823,7 @@ let test_mint_with_scheduled_snapshot_success =
   let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
 
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=6n; token_info={token_id=6n;token_info=(Map.empty : (string, bytes) map)} } : CMTAT_nft_asset.Token.mint_param) in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
   
@@ -844,6 +838,7 @@ let test_burn_with_scheduled_snapshot_success =
   let _owner2 = List_helper.nth_exn 1 owners in
   let _owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
 
@@ -851,6 +846,7 @@ let test_burn_with_scheduled_snapshot_success =
   let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
 
+  let () = Test.set_source op2 in
   let burn_request = ({ recipient=owner1; token_id=1n; amount=1n } : CMTAT_nft_asset.Token.burn_param) in
   let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
   
@@ -1100,6 +1096,30 @@ let test_unschedule_snapshot_failure_no_scheduled =
 //   let () = string_failure r CMTAT_nft_asset.Token.SNAPSHOTS.Errors.no_snapshot_scheduled in
 //   ()
 
+let test_unschedule_snapshot_failure_in_past =
+  let initial_storage, owners, operators = TestHelpers.get_initial_storage () in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
+
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_snapshooter : CMTAT_nft_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
+  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+
+  let () = Test.set_source owner1 in
+  let snapshot_time_0 = ("1970-01-01t00:30:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  let () = Test.bake_until_n_cycle_end 1n in
+
+  let r = Test.transfer orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
+  let () = string_failure r CMTAT_nft_asset.Token.SNAPSHOTS.Errors.snapshot_already_done in
+  ()
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        SNAPSHOT  VIEWS
@@ -1145,6 +1165,7 @@ let test_snapshot_totalsupply_view_success =
   let owner3 = List_helper.nth_exn 2 owners in
   let _owner4 = List_helper.nth_exn 3 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
   // ORIGINATION CALLER
   let () = Test.set_source op1 in
   let orig_caller = Test.originate (contract_of Caller_SNAPSHOTTOTALSUPPLY) 0n 0tez in
@@ -1169,8 +1190,8 @@ let test_snapshot_totalsupply_view_success =
   | Some (v) -> v
   in
 
-  // MINT (with admin)
-  let () = Test.set_source initial_storage.administration.admin in
+  // MINT
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=6n; token_info={token_id=6n;token_info=(Map.empty : (string, bytes) map)} } : CMTAT_nft_asset.Token.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
@@ -1192,6 +1213,7 @@ let test_snapshot_balanceof_view_success =
   let owner3 = List_helper.nth_exn 2 owners in
   let _owner4 = List_helper.nth_exn 3 owners in
   let op1    = List_helper.nth_exn 0 operators in
+  let op3    = List_helper.nth_exn 2 operators in
   // ORIGINATION CALLER
   let () = Test.set_source op1 in
   let orig_caller = Test.originate (contract_of Caller_SNAPSHOTBALANCEOF) 0n 0tez in
@@ -1216,8 +1238,8 @@ let test_snapshot_balanceof_view_success =
   | None -> 0n
   in
 
-  // MINT (with admin)
-  let () = Test.set_source initial_storage.administration.admin in
+  // MINT
+  let () = Test.set_source op3 in
   let mint_request = ({ recipient=owner1; token_id=6n; token_info={token_id=6n;token_info=(Map.empty : (string, bytes) map)} } : CMTAT_nft_asset.Token.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
