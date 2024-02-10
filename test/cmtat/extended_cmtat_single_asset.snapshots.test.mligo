@@ -305,7 +305,7 @@ let string_failure (res : test_exec_result) (expected : string) : unit =
 // /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-let test_snapshot_balanceof_view_success_fixed_time =
+let test_snapshot_balanceof_view_success_simple_fixed_time =
   let initial_storage, owners, operators = get_initial_storage_at ("2024-01-01t00:00:00Z" : timestamp) (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
   let owner2 = List_helper.nth_exn 1 owners in
@@ -383,7 +383,7 @@ let test_snapshot_balanceof_view_success_fixed_time =
 //          Mint      07:00     Burn     08:00
 //            2         t0       1         t1   
         
-let test_snapshot_balanceof_view_success_multiple =
+let test_snapshot_balanceof_view_success_multiple_with_fixed_time =
   let initial_storage, owners, operators = get_initial_storage_at ("2024-01-01t00:00:00Z" : timestamp) (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
   let owner2 = List_helper.nth_exn 1 owners in
@@ -538,27 +538,23 @@ let test_snapshot_balanceof_view_success_multiple_with_bake =
   let () = assert_balances orig.addr ((owner1, 11n), (owner2, 10n), (owner3, 10n)) in
   let () = assert_totalsupply orig.addr 31n in
 
-  // Call View of Caller contract
-  // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract (with timestamp_0)
+  // Call the "snapshotBalanceOf" view of CMTAT contract
+  // Check "snapshotBalanceOf" view at timestamp_0
   let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_0, owner1, 0n)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
   let () = assert(storage_caller = owner1_balance_before_mint) in
-
-  // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract (with timestamp after timestamp_0)
+  // Check "snapshotBalanceOf" view at timestamp_1
   let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_1, owner1, 0n)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
   let () = assert(storage_caller = 12n) in
-
-  // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract (with timestamp after timestamp_0)
+  // Check "snapshotBalanceOf" view after timestamp_1
   let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_1 + 1000, owner1, 0n)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
   let () = assert(storage_caller = 11n) in
-
-    // Caller contract calls the "snapshotBalanceOf" view of CMTAT contract (with timestamp after timestamp_0)
+  // Check "snapshotBalanceOf" view between timestamp_0 and timestamp_1
   let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_0 + 100, owner1, 0n)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
-  let () = assert(storage_caller = 10n) in
-
+  let () = assert(storage_caller = 12n) in
   ()
 
 
