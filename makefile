@@ -52,6 +52,7 @@ ifndef SUITE
 	@$(call test,cmtat/default_cmtat_single_asset.test.mligo)
 	@$(call test,cmtat/extended_cmtat_single_asset.fa2.test.mligo)
 	@$(call test,cmtat/extended_cmtat_single_asset.test.mligo)
+	@$(call test,cmtat/extended_cmtat_single_asset.snapshots.test.mligo)
 
 	@$(call test,cmtat/extended_cmtat_multi_asset.fa2.test.mligo)
 	@$(call test,cmtat/extended_cmtat_multi_asset.test.mligo)

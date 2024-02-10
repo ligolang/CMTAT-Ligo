@@ -142,14 +142,26 @@ let snapshotTotalsupply (time : timestamp) (token_id: nat) (totalsupplies: TOTAL
         | None -> 0n)
     | Some(v) -> v
 
+// (utils) parse scheduled snapshot list to get the closest snapshot of a given timestamp
+let get_next_scheduled_snapshot (ref_time: timestamp) (snapshots:t) : timestamp option =
+    let get_next (acc, elt: timestamp option * timestamp) = match acc with
+    | Some(time) -> if (ref_time < elt) && (elt < time) then Some(elt) else acc 
+    | None -> if (ref_time < elt) then Some(elt) else acc
+    in
+    List.fold get_next snapshots.scheduled_snapshots (None: timestamp option)
+
+
 // If there is a scheduled snapshot for the given time returns balance of the snapshot otherwise returns the current user balance
 let snapshotBalanceOf (time : timestamp) (user: address) (token_id: nat) (ledger: FA2.NFTExtendable.ledger) (snapshots:t) : nat =
     match Big_map.find_opt user snapshots.account_snapshots with
     | None -> get_for_user_curried(ledger, user, token_id)
     | Some(snaps) -> 
         let value = match Map.find_opt (time, token_id) snaps with
-        | None -> get_for_user_curried(ledger, user, token_id)
         | Some (v) -> v
+        | None -> // search closest scheduled snapshot 
+            (match (get_next_scheduled_snapshot time snapshots) with
+            | None -> get_for_user_curried(ledger, user, token_id)
+            | Some(tt) -> Option.unopt (Map.find_opt (tt, token_id) snaps) )
         in value
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -170,21 +182,13 @@ let update_totalsupply_snapshot (current_scheduled_snapshot: timestamp) (token_i
     let new_totalsupply_snapshots = Map.update (current_scheduled_snapshot, token_id) (Some(totalsupply_balance)) snapshots.totalsupply_snapshots in
     { snapshots with totalsupply_snapshots = new_totalsupply_snapshots }
 
-let get_current_scheduled_snapshot (snapshots:t) : timestamp option =
-    let get_current (acc, elt: timestamp option * timestamp) = match acc with
-    | Some(time) -> if (Tezos.get_now() < elt) && (elt < time) then Some(elt) else acc 
-    | None -> if (Tezos.get_now() < elt) then Some(elt) else acc
-    in
-    List.fold get_current snapshots.scheduled_snapshots (None: timestamp option)
-
-
 let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2.NFTExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots: t) : t =
     let (from_, to_, amt, token_id) = tr in
     if (amt = 0n) then
         snapshots
     else
         // Retrieve current scheduled time
-        let current_scheduled_snapshot_opt = get_current_scheduled_snapshot snapshots in
+        let current_scheduled_snapshot_opt = get_next_scheduled_snapshot (Tezos.get_now()) snapshots in
         let new_snapshots = snapshots in
         let new_snapshots = match current_scheduled_snapshot_opt with
         | None -> snapshots
