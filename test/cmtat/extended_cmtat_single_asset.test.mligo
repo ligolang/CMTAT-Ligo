@@ -890,11 +890,49 @@ let test_schedule_snapshot_success =
   let op1    = List_helper.nth_exn 0 operators in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
-
+  // SCHEDULE SNAPSHOT
   let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
   let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
   ()
+
+let test_schedule_snapshot_failure_before_next_scheduled =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // SCHEDULE SNAPSHOT
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+  // SCHEDULE SNAPSHOT
+  let snapshot_time_1 = ("2023-01-01t00:00:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.before_next_scheduled in
+  ()
+
+
+let test_schedule_snapshot_failure_already_scheduled =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // SCHEDULE SNAPSHOT
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+  // SCHEDULE SNAPSHOT
+  let snapshot_time_1 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.already_scheduled in
+  ()
+
 
 let test_transfer_with_scheduled_snapshot_success =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in

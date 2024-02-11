@@ -155,7 +155,6 @@ let pause (type a) (p: ADMINISTRATION.pause_param) (s: a storage) : a ret =
     [], { s with administration = ADMINISTRATION.pause p s.administration }
 
 
-// TODO
 type token_id = nat
 
 type mint_param = { 

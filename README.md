@@ -9,10 +9,14 @@ PR - rework NFT - In draft ... relevant ?
 - module snapshot for NFT must be reworked
 - module totalsupply for NFT must be reworked
 
+- rework error message ? CMTAT_SNAPSHOT_ALREADY_SCHEDULED ....
+- rework interface ? burn_param ... 
 
 Other considerations
 
 - should the authorization module take the token_id into account ? a different minter per token_id in a multi asset configuration
+
+- should the snapshot module update snapshot balance in beforeHookTransfer ? (or afterhooktransfer)
 
 
 # CMTA Token
