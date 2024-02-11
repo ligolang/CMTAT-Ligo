@@ -13,7 +13,7 @@ type operator = CmtatSingleAssetExtendable.operator
 type operators = CmtatSingleAssetExtendable.operators
 
 //TODO
-type storage = unit CmtatSingleAssetExtendable.storage
+// type storage = unit CmtatSingleAssetExtendable.storage
 
 type storage =
 {
@@ -85,30 +85,83 @@ let unlift (ret : operation list * unit CmtatSingleAssetExtendable.storage) : re
 let transfer (t : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer) (s : storage) : ret =
   unlift (CmtatSingleAssetExtendable.transfer t (lift s))
 
-// [@entry]
-// let balance_of (b : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.balance_of) (s : storage) : ret =
-//   unlift (CmtatSingleAssetExtendable.balance_of b (lift s))
+[@entry]
+let balance_of (b : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.balance_of) (s : storage) : ret =
+  unlift (CmtatSingleAssetExtendable.balance_of b (lift s))
 
-// [@entry]
-// let update_operators (updates : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.update_operators) (s : storage) : ret =
-//   unlift (CmtatSingleAssetExtendable.update_operators updates (lift s))
+[@entry]
+let update_operators (updates : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.update_operators) (s : storage) : ret =
+  unlift (CmtatSingleAssetExtendable.update_operators updates (lift s))
 
-// [@view]
-// let get_balance (p : (address * nat)) (s : storage) : nat =
-//   CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.get_balance p (lift s)
+[@view]
+let get_balance (p : (address * nat)) (s : storage) : nat =
+  CmtatSingleAssetExtendable.get_balance p (lift s)
 
-// [@view]
-// let total_supply (token_id : nat) (s : storage) : nat =
-//   CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.total_supply token_id (lift s)
+[@view]
+let total_supply (token_id : nat) (s : storage) : nat =
+  CmtatSingleAssetExtendable.total_supply token_id (lift s)
 
-// [@view]
-// let all_tokens (_ : unit) (s : storage) : nat set =
-//   CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.all_tokens () (lift s)
+[@view]
+let all_tokens (_ : unit) (s : storage) : nat set =
+  CmtatSingleAssetExtendable.all_tokens () (lift s)
 
-// [@view]
-// let is_operator (op : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.operator) (s : storage) : bool =
-//   CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.is_operator op (lift s)
+[@view]
+let is_operator (op : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.operator) (s : storage) : bool =
+  CmtatSingleAssetExtendable.is_operator op (lift s)
 
-// [@view]
-// let token_metadata (p : nat) (s : storage) : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.tokenMetadataData =
-//   CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.token_metadata p (lift s)
+[@view]
+let token_metadata (p : nat) (s : storage) : CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.tokenMetadataData =
+  CmtatSingleAssetExtendable.token_metadata p (lift s)
+
+[@entry]
+let pause (p: CmtatSingleAssetExtendable.ADMINISTRATION.pause_param) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.pause p (lift s))
+
+[@entry]
+let mint  (p: CmtatSingleAssetExtendable.mint_param) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.mint p (lift s))
+
+[@entry]
+let burn (p: CmtatSingleAssetExtendable.burn_param) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.burn p (lift s))
+
+[@entry]
+let grantRole (p: address * CmtatSingleAssetExtendable.AUTHORIZATIONS.role) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.grantRole p (lift s))
+
+[@entry]
+let revokeRole (p: address * CmtatSingleAssetExtendable.AUTHORIZATIONS.role) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.revokeRole p (lift s))
+
+[@entry]
+let scheduleSnapshot (p: timestamp) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.scheduleSnapshot p (lift s))
+
+[@entry]
+let rescheduleSnapshot (p: timestamp * timestamp) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.rescheduleSnapshot p (lift s))
+
+[@entry]
+let unscheduleSnapshot (p: timestamp) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.unscheduleSnapshot p (lift s))
+
+[@entry]
+let setRuleEngine (p: CmtatSingleAssetExtendable.VALIDATION.rule_engine_param) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.setRuleEngine p (lift s))
+
+[@entry]
+let kill (_p: unit) (s: storage) : ret =
+  unlift (CmtatSingleAssetExtendable.kill () (lift s))
+
+[@view]
+let getNextSnapshots (_p: unit) (s: storage) : timestamp list =
+  CmtatSingleAssetExtendable.getNextSnapshots (lift s)
+
+[@view]
+let snapshotTotalsupply (p: timestamp * nat) (s: storage) : nat =
+  CmtatSingleAssetExtendable.snapshotTotalsupply p (lift s)
+
+[@view]
+let snapshotBalanceOf (p: timestamp * address * nat) (s: storage) : nat =
+  CmtatSingleAssetExtendable.snapshotBalanceOf p (lift s)
+

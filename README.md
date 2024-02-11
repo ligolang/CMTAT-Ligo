@@ -1,12 +1,18 @@
 # UNDER CONSTRUCTION !! 
 | asset kind   |  progress |
 |--------------|-----------|
-| single_asset | 80% |
-| multi_asset  | 80% |
-| nft          | 50% |
+| single_asset | 90% |
+| multi_asset  | 90% |
+| nft          | 80% |
 
+PR - rework NFT - In draft ... relevant ? 
 - module snapshot for NFT must be reworked
 - module totalsupply for NFT must be reworked
+
+
+Other considerations
+
+- should the authorization module take the token_id into account ? a different minter per token_id in a multi asset configuration
 
 
 # CMTA Token
@@ -187,47 +193,43 @@ The *Snapshots* module also provides views (`snapshotTotalsupply`, `snapshotBala
 
 
 
-## Entrypoints
+## Library functions
 
-| module                    | function | parameter                     | 
-|---------------------------|----------|-------------------------------|
-| ADMINISTRATION            | pause    | bool                          |
-| FA2.SingleAssetExtendable | transfer | FA2.SingleAssetExtendable.TZIP12.transfer |
-| FA2.SingleAssetExtendable | balance_of | FA2.SingleAssetExtendable.TZIP12.balance_of |
-| FA2.SingleAssetExtendable | update_operators | FA2.SingleAssetExtendable.TZIP12.update_operators |
-|                           | mint | mint_param |
-|                           | burn | burn_param |
-|                           | kill | unit |
-| AUTHORIZATIONS            | grantRole | address * AUTHORIZATIONS.role |
-| AUTHORIZATIONS            | revokeRole | address * AUTHORIZATIONS.role |
-| SNAPSHOTS                 | scheduleSnapshot | timestamp |
-| SNAPSHOTS                 | rescheduleSnapshot | timestamp * timestamp |
-| SNAPSHOTS                 | unscheduleSnapshot | timestamp |
-| VALIDATION                | setRuleEngine | address option |
-| VALIDATION                | validateTransfer | address * address * nat |
-| VALIDATION                | assert_validateTransfer | TZIP12.transfer |
+Functions provided by the library for Single asset configuration.
 
-
-## Views
-
-| module                    | function            | parameter                                 | returned type |
-|---------------------------|---------------------|-------------------------------------------|---------------|
-| FA2.SingleAssetExtendable | get_balance         | address * nat                             | nat   |
-| FA2.SingleAssetExtendable | total_supply        | nat                                       | nat   |
-| FA2.SingleAssetExtendable | all_tokens          | unit                                      | nat set  |
-| FA2.SingleAssetExtendable | is_operator         | FA2.SingleAssetExtendable.TZIP12.operator | bool  |
-| FA2.SingleAssetExtendable | token_metadata      | nat                                       | FA2.SingleAssetExtendable.TZIP12.tokenMetadataData  |
-| AUTHORIZATIONS            | hasRole             | address * AUTHORIZATIONS.role             | bool          |
-| SNAPSHOTS                 | getNextSnapshots    | unit                                      | timestamp list              |
-| SNAPSHOTS                 | snapshotTotalsupply | timestamp * nat                           | nat              |
-| SNAPSHOTS                 | snapshotBalanceOf   | timestamp * address * nat                 | nat              |
+| function name           | parameter                                    |  module                   |
+|-------------------------|----------------------------------------------|---------------------------|
+| pause                   | bool                                         | ADMINISTRATION            |
+| transfer                | FA2.SingleAssetExtendable.TZIP12.transfer    | FA2.SingleAssetExtendable |
+| balance_of              | FA2.SingleAssetExtendable.TZIP12.balance_of  | FA2.SingleAssetExtendable |
+| update_operators        | FA2.SingleAssetExtendable.TZIP12.update_operators | FA2.SingleAssetExtendable |
+| mint                    | mint_param                                   | FA2.SingleAssetExtendable |
+| burn                    | burn_param                                   | FA2.SingleAssetExtendable |
+| kill                    | unit                                         | ADMINISTRATION            |
+| grantRole               | address * AUTHORIZATIONS.role                | AUTHORIZATIONS            |
+| revokeRole              | address * AUTHORIZATIONS.role                | AUTHORIZATIONS            |
+| scheduleSnapshot        | timestamp                                    | SNAPSHOTS                 |
+| rescheduleSnapshot      | timestamp * timestamp                        | SNAPSHOTS                 |
+| unscheduleSnapshot      | timestamp                                    | SNAPSHOTS                 |
+| setRuleEngine           | address option                               | VALIDATION                |
+| validateTransfer        | address * address * nat                      | VALIDATION                |
+| assert_validateTransfer | TZIP12.transfer                              | VALIDATION                |
 
 
+## Library Views
 
+| view name           | parameter                                 | returned type  | module                    |
+|---------------------|-------------------------------------------|----------------|---------------------------|
+| get_balance         | address * nat                             | nat            | FA2.SingleAssetExtendable |
+| total_supply        | nat                                       | nat            | FA2.SingleAssetExtendable |
+| all_tokens          | unit                                      | nat set        | FA2.SingleAssetExtendable |
+| is_operator         | FA2.SingleAssetExtendable.TZIP12.operator | bool           | FA2.SingleAssetExtendable |
+| token_metadata      | nat                                       | FA2.SingleAssetExtendable.TZIP12.tokenMetadataData  | FA2.SingleAssetExtendable |
+| hasRole             | address * AUTHORIZATIONS.role             | bool           | AUTHORIZATIONS            |
+| getNextSnapshots    | unit                                      | timestamp list | SNAPSHOTS                 |
+| snapshotTotalsupply | timestamp * nat                           | nat            | SNAPSHOTS                 |
+| snapshotBalanceOf   | timestamp * address * nat                 | nat            | SNAPSHOTS                 |
 
-### Pause
-
-The *Pause* function is meant to prevent the execution of other entrypoints of the contracts. It modifies the `paused` field of the storage.
 
 
 

@@ -1,17 +1,10 @@
 #import "extended_cmtat_single_asset.instance.mligo" "CMTAT_single_asset"
 #import "../helpers/list.mligo" "List_helper"
 #import "../helpers/totalsupply_view_caller_contract.mligo" "Caller"
-#import "../helpers/isoperator_view_caller_contract.mligo" "Caller_ISOPERATOR"
-#import "../helpers/tokenmetadata_view_caller_contract.mligo" "Caller_TOKENMETADATA"
-#import "../helpers/getnextsnapshots_view_caller_contract.mligo" "Caller_GETNEXTSNAPSHOTS"
-#import "../helpers/snapshottotalsupply_view_caller_contract.mligo" "Caller_SNAPSHOTTOTALSUPPLY"
 #import "../helpers/snapshotbalanceof_view_caller_contract.mligo" "Caller_SNAPSHOTBALANCEOF"
-// #import "../helpers/rule_engine_contract.mligo" "RULE_ENGINE"
 
 
 let get_initial_storage_ (a, b, c : nat * nat * nat) =
-  // let () = Test.reset_state 6n ([] : tez list) in
-
   let owner1 = Test.nth_bootstrap_account 0 in
   let owner2 = Test.nth_bootstrap_account 1 in
   let owner3 = Test.nth_bootstrap_account 2 in
@@ -388,8 +381,8 @@ let test_snapshot_balanceof_view_success_simple_fixed_time =
 // -----------------------------------------------------------------------------> time
 //            ^         ^        ^        ^     
 //            |         |        |        |
-//          Mint      07:00     Burn     08:00
-//            2         t0       1         t1   
+//          Mint      09:00     Burn    10:00
+//            2         t0       1        t1   
         
 let test_snapshot_balanceof_view_success_multiple_with_fixed_time =
   let initial_storage, owners, operators = get_initial_storage_at ("2024-01-01t00:00:00Z" : timestamp) (10n, 10n, 10n) in
