@@ -6,6 +6,10 @@
 #import "../modules/single_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 
+
+module TZIP12 = FA2.SingleAssetExtendable.TZIP12
+module TZIP16 = FA2.SingleAssetExtendable.TZIP16
+
 type ledger = FA2.SingleAssetExtendable.ledger
 
 type operator = address

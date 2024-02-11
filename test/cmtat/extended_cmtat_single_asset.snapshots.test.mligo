@@ -6,7 +6,7 @@
 #import "../helpers/getnextsnapshots_view_caller_contract.mligo" "Caller_GETNEXTSNAPSHOTS"
 #import "../helpers/snapshottotalsupply_view_caller_contract.mligo" "Caller_SNAPSHOTTOTALSUPPLY"
 #import "../helpers/snapshotbalanceof_view_caller_contract.mligo" "Caller_SNAPSHOTBALANCEOF"
-#import "../helpers/rule_engine_contract.mligo" "RULE_ENGINE"
+// #import "../helpers/rule_engine_contract.mligo" "RULE_ENGINE"
 
 
 let get_initial_storage_ (a, b, c : nat * nat * nat) =
@@ -539,9 +539,6 @@ let test_snapshot_balanceof_view_success_multiple_with_bake =
   let storage_caller = Test.get_storage orig_caller.addr in
   let () = assert(storage_caller = owner1_balance_before_mint) in
 
-  // TIME = "2024-01-01t00:06:06Z"
-//  let () = Test.bake_until_n_cycle_end 1n in
-  // TIME > "2024-01-01t00:34:00Z"
 
   let () = Test.set_source initial_storage.administration.admin in
   // GRANT op3 the role Minter

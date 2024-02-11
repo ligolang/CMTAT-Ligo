@@ -6,8 +6,10 @@
 #import "../helpers/getnextsnapshots_view_caller_contract.mligo" "Caller_GETNEXTSNAPSHOTS"
 #import "../helpers/snapshottotalsupply_view_caller_contract.mligo" "Caller_SNAPSHOTTOTALSUPPLY"
 #import "../helpers/snapshotbalanceof_view_caller_contract.mligo" "Caller_SNAPSHOTBALANCEOF"
-#import "../helpers/rule_engine_contract.mligo" "RULE_ENGINE"
+#import "../helpers/rule_engine_bl_contract.mligo" "RULE_ENGINE_BLACKLIST"
+#import "../helpers/rule_engine_wl_contract.mligo" "RULE_ENGINE_WHITELIST"
 
+module TZIP12 = CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE.TZIP12
 
 let get_initial_storage_ (a, b, c : nat * nat * nat) =
   // let () = Test.reset_state 6n ([] : tez list) in
@@ -350,9 +352,9 @@ let test_kill_success_with_admin =
 
   // TRANSFER - fails
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let r = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
   let () = string_failure r CMTAT_single_asset.Token.ADMINISTRATION.Errors.contract_killed in
@@ -474,9 +476,9 @@ let test_atomic_transfer_success =
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
@@ -492,9 +494,9 @@ let test_atomic_transfer_failure_in_pause =
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
@@ -567,7 +569,7 @@ let test_isoperator_view_success =
 
   // Call View of Caller contract
  // Caller contract calls the "is_opertor" view of CMTAT contract
-  let op_request : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.operator = { owner=owner1; operator=op1; token_id=0n } in
+  let op_request : TZIP12.operator = { owner=owner1; operator=op1; token_id=0n } in
   let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, op_request)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
   let () = assert(storage_caller = Some(true)) in
@@ -578,7 +580,7 @@ let test_isoperator_view_success =
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        TOKEN_METADATA VIEW
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-type tokenMetadataData = CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.tokenMetadataData
+type tokenMetadataData = TZIP12.tokenMetadataData
 
 let test_tokenmetadata_view_success =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
@@ -908,9 +910,9 @@ let test_transfer_with_scheduled_snapshot_success =
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
   // TRANSFER
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let _ = Test.transfer_exn orig.addr (Transfer transfer_requests) 0tez in
   let () = assert_account_snapshot orig.addr snapshot_time_0 ((owner1, 10n), (owner2, 10n), (owner3, 10n))in
@@ -1380,7 +1382,7 @@ let test_snapshot_balanceof_view_success =
   ()
 
 ////////////////////////////////////////////////////////////////////////////////
-//          VALIDATION (RULE_ENGINE)
+//          VALIDATION (RULE_ENGINE_BLACKLIST)
 ////////////////////////////////////////////////////////////////////////////////
 
 let test_setruleengine_success_with_admin =
@@ -1392,11 +1394,11 @@ let test_setruleengine_success_with_admin =
   
   // ORIGINATION RULE_ENGINE
   let () = Test.set_source op1 in
-  let init_store_rule_engine : RULE_ENGINE.storage = {
+  let init_store_rule_engine : RULE_ENGINE_BLACKLIST.storage = {
     admin = op1;
     frozens = Big_map.empty
   } in
-  let orig_caller = Test.originate (contract_of RULE_ENGINE) init_store_rule_engine 0tez in
+  let orig_caller = Test.originate (contract_of RULE_ENGINE_BLACKLIST) init_store_rule_engine 0tez in
   let contr_caller = Test.to_contract orig_caller.addr in 
   let rule_engine_address : address = Tezos.address contr_caller in
 
@@ -1417,11 +1419,11 @@ let test_transfer_failure_because_refused =
   
   // ORIGINATION RULE_ENGINE
   let () = Test.set_source op1 in
-  let init_store_rule_engine : RULE_ENGINE.storage = {
+  let init_store_rule_engine : RULE_ENGINE_BLACKLIST.storage = {
     admin = op1;
     frozens = Big_map.empty
   } in
-  let orig_caller = Test.originate (contract_of RULE_ENGINE) init_store_rule_engine 0tez in
+  let orig_caller = Test.originate (contract_of RULE_ENGINE_BLACKLIST) init_store_rule_engine 0tez in
   let contr_caller = Test.to_contract orig_caller.addr in 
   let rule_engine_address : address = Tezos.address contr_caller in
   // FREEZE on RULE_ENGINE
@@ -1435,9 +1437,9 @@ let test_transfer_failure_because_refused =
   let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
   // TRANSFER
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let r = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
   let () = string_failure r CMTAT_single_asset.Token.VALIDATION.Errors.refused_by_rule_engine in
@@ -1453,11 +1455,11 @@ let test_transfer_success_without_frozen =
   
   // ORIGINATION RULE_ENGINE
   let () = Test.set_source op1 in
-  let init_store_rule_engine : RULE_ENGINE.storage = {
+  let init_store_rule_engine : RULE_ENGINE_BLACKLIST.storage = {
     admin = op1;
     frozens = Big_map.empty
   } in
-  let orig_caller = Test.originate (contract_of RULE_ENGINE) init_store_rule_engine 0tez in
+  let orig_caller = Test.originate (contract_of RULE_ENGINE_BLACKLIST) init_store_rule_engine 0tez in
   let contr_caller = Test.to_contract orig_caller.addr in 
   let rule_engine_address : address = Tezos.address contr_caller in
   // FREEZE on RULE_ENGINE
@@ -1471,8 +1473,8 @@ let test_transfer_success_without_frozen =
   let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
   // TRANSFER
   let transfer_requests = ([
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let _ = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
   let () = assert_balances orig.addr ((owner1, 10n), (owner2, 8n), (owner3, 12n)) in
@@ -1500,8 +1502,137 @@ let test_transfer_failure_invalid_rule_engine =
   let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
   // TRANSFER
   let transfer_requests = ([
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n}] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET.CmtatSingleAssetExtendable.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
+  in
+  let r = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.VALIDATION.Errors.invalid_rule_engine in
+  ()
+
+////////////////////////////////////////////////////////////////////////////////
+//          VALIDATION (RULE_ENGINE_WHITELIST)
+////////////////////////////////////////////////////////////////////////////////
+
+let test_setruleengine_success_with_admin =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  // ORIGINATION RULE_ENGINE
+  let () = Test.set_source op1 in
+  let init_store_rule_engine : RULE_ENGINE_WHITELIST.storage = {
+    admin = op1;
+    authorized = Big_map.empty
+  } in
+  let orig_caller = Test.originate (contract_of RULE_ENGINE_WHITELIST) init_store_rule_engine 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+  let rule_engine_address : address = Tezos.address contr_caller in
+
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+
+  let _ = Test.transfer_exn orig.addr (SetRuleEngine (Some(rule_engine_address))) 0tez in
+  let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
+  ()
+
+
+let test_transfer_failure_because_refused =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  // ORIGINATION RULE_ENGINE
+  let () = Test.set_source op1 in
+  let init_store_rule_engine : RULE_ENGINE_WHITELIST.storage = {
+    admin = op1;
+    authorized = Big_map.empty
+  } in
+  let orig_caller = Test.originate (contract_of RULE_ENGINE_WHITELIST) init_store_rule_engine 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+  let rule_engine_address : address = Tezos.address contr_caller in
+  // FREEZE on RULE_ENGINE
+  let _ = Test.transfer_exn orig_caller.addr (Freeze owner1) 0tez in
+
+  // ORIGINATION 
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // SET RULE_ENGINE
+  let _ = Test.transfer_exn orig.addr (SetRuleEngine (Some(rule_engine_address))) 0tez in
+  let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
+  // TRANSFER
+  let transfer_requests = ([
+    ({from_=owner1; txs=([{to_=owner2;token_id=1n;amount=2n};{to_=owner3;token_id=2n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=2n;amount=2n};{to_=owner1;token_id=2n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
+  in
+  let r = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.VALIDATION.Errors.refused_by_rule_engine in
+  ()
+
+
+let test_transfer_success_without_frozen =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  // ORIGINATION RULE_ENGINE
+  let () = Test.set_source op1 in
+  let init_store_rule_engine : RULE_ENGINE_WHITELIST.storage = {
+    admin = op1;
+    authorized = Big_map.empty
+  } in
+  let orig_caller = Test.originate (contract_of RULE_ENGINE_WHITELIST) init_store_rule_engine 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+  let rule_engine_address : address = Tezos.address contr_caller in
+  // Authorize on RULE_ENGINE
+  let _ = Test.transfer_exn orig_caller.addr (Unfreeze owner2) 0tez in
+  let _ = Test.transfer_exn orig_caller.addr (Unfreeze owner3) 0tez in
+
+  // ORIGINATION 
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // SET RULE_ENGINE
+  let _ = Test.transfer_exn orig.addr (SetRuleEngine (Some(rule_engine_address))) 0tez in
+  let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
+  // TRANSFER
+  let transfer_requests = ([
+    ({from_=owner2; txs=([{to_=owner3;token_id=2n;amount=2n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
+  in
+  let _ = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
+  let () = assert_balances orig.addr ((owner1, 10n), (owner2, 8n), (owner3, 12n)) in
+  ()
+
+
+let test_transfer_failure_invalid_rule_engine =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  
+  // ORIGINATION RULE_ENGINE
+  let () = Test.set_source op1 in
+  let orig_caller = Test.originate (contract_of Caller) 0n 0tez in
+  let contr_caller = Test.to_contract orig_caller.addr in 
+  let rule_engine_address : address = Tezos.address contr_caller in
+ 
+  // ORIGINATION 
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // SET RULE_ENGINE
+  let _ = Test.transfer_exn orig.addr (SetRuleEngine (Some(rule_engine_address))) 0tez in
+  let () = assert_rule_engine orig.addr (Some(rule_engine_address)) in
+  // TRANSFER
+  let transfer_requests = ([
+    ({from_=owner2; txs=([{to_=owner3;token_id=2n;amount=2n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let r = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
   let () = string_failure r CMTAT_single_asset.Token.VALIDATION.Errors.invalid_rule_engine in
