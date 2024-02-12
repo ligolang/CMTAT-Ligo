@@ -15,15 +15,15 @@ module Errors = struct
 end
 
 [@entry]
-let transfer (t : Token.FA2.SingleAssetExtendable.TZIP12.transfer) (s : storage) : ret =
+let transfer (t : Token.TZIP12.transfer) (s : storage) : ret =
   Token.transfer t s
   
 [@entry]
-let balance_of (b : Token.FA2.SingleAssetExtendable.TZIP12.balance_of) (s : storage) : ret =
+let balance_of (b : Token.TZIP12.balance_of) (s : storage) : ret =
   Token.balance_of b s
 
 [@entry]
-let update_operators (updates : Token.FA2.SingleAssetExtendable.TZIP12.update_operators) (s : storage) : ret =
+let update_operators (updates : Token.TZIP12.update_operators) (s : storage) : ret =
   Token.update_operators updates s
 
 [@view]
@@ -39,11 +39,11 @@ let all_tokens (_ : unit) (s : storage) : nat set =
   Token.all_tokens () s
 
 [@view]
-let is_operator (op : Token.FA2.SingleAssetExtendable.TZIP12.operator) (s : storage) : bool =
+let is_operator (op : Token.TZIP12.operator) (s : storage) : bool =
   Token.is_operator op s
 
 [@view]
-let token_metadata (p : nat) (s : storage) : Token.FA2.SingleAssetExtendable.TZIP12.tokenMetadataData =
+let token_metadata (p : nat) (s : storage) : Token.TZIP12.tokenMetadataData =
   Token.token_metadata p s
 
 

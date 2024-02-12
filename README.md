@@ -1,16 +1,12 @@
 # UNDER CONSTRUCTION !! 
-| asset kind   |  progress |
-|--------------|-----------|
-| single_asset | 90% |
-| multi_asset  | 90% |
-| nft          | 80% |
 
-PR - rework NFT - In draft ... relevant ? 
-- module snapshot for NFT must be reworked
-- module totalsupply for NFT must be reworked
+TODO list
 
 - rework error message ? CMTAT_SNAPSHOT_ALREADY_SCHEDULED ....
 - rework interface ? burn_param ... 
+- snapshots extra tests for multi ?
+- optimization (snapshot list search) ?
+- rework NFT (snapshot, totalsupply) - PR In draft ... relevant ? 
 
 Other considerations
 
@@ -45,12 +41,46 @@ Here is an example of the resulting `ligo.json` file.
 
 Once installed, you can use the cmtat library to create a cmtat token, or design a custom cmtat token by using the modules provided by the library.
 
+## Configurations (asset type and extendable)
 
-## Modules
+The library provides a default CMTAT Token implementation which declares all entrypoints. This default CMTAT Token implementation is not extendable (i.e. the storage cannot be extended with extra fields).
 
-The CMTAT library provides features separated on modules which can be used in the final token contract. This *Token contract* must declare its entrypoints and can use functions implemented in the CMTAT library.
+The following asset types are supported
+- Single asset
+- multi asset
+- NFT
 
-For example, the declaration of the `mint` entrypoint can rely on the default implementation provided by the library. 
+
+The library also provides an **extendable** implementation which helps to create a custom CMTAT Token implementation. Notice that the custom CMTAT Token must declare its entrypoints and can rely on the **extendable** implementation modules.
+
+
+The following modules are provided by the library
+
+| type  | extendable | module name    |
+|-------|------------|----------------|
+| single|    No      | CMTAT_SINGLE_ASSET                |
+| single|    Yes     | CMTAT_SINGLE_ASSET_EXTENDABLE     |
+| multi |    No      | CMTAT_MULTI_ASSET                 |
+| multi |    Yes     | CMTAT_MULTI_ASSET_EXTENDABLE      |
+| nft   |    No      | CMTAT_NFT_ASSET                   |
+| nft   |    Yes     | CMTAT_NFT_ASSET_EXTENDABLE        |
+
+## How to implement a custom CMTA Token
+
+The library provides an **extendable** implementation which consist on a module that can be aliased for readingness.
+```
+#import "@cmtat/lib/main.mligo" "CMTAT"
+module Token = CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE
+``` 
+Now we can use all sub modules to complete the implementation of the custom CMTA Token.
+
+### Sub-modules
+
+The CMTAT library provides features separated on sub-modules which can be used in the final token contract. This *Token contract* must declare its entrypoints and can use functions implemented in the CMTAT library.
+
+For example, the declaration of the `mint` entrypoint can rely on the default implementation provided by the module. 
+
+The `storage` definition can rely on the one provided by the module. It is an extendable storage which expects a type. (Use `unit` if no extension)
 
 ```
 #import "@cmtat/lib/main.mligo" "CMTAT"
@@ -63,9 +93,9 @@ type ret = unit Token.ret
 let mint (p: Token.mint_param) (s: storage) : ret =
   Token.mint p s
 ```
-In the snippet of code (above) the `Token.mint` function contains the default implementation. Notice that this token is a "Single asset" because the `CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE` module is used. This module also provides an interface (`Token.mint_param`) and a default storage (`Token.storage`).  
+In the snippet of code (above) the `Token.mint` function is the default implementation. Notice that this token is a "Single asset" because the `CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE` module is used. This module also provides an interface (`Token.mint_param`) and a default storage (`Token.storage`).  
 
-## Extendable library
+### Extendable library
 
 By "extendable" it is meant that the storage can be extended. This module has been designed to allow to add extra field in the storage. The `CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE` module provides a parametric storage which expects an `extension` custom type.
 
@@ -86,7 +116,7 @@ type ret = extension Token.ret
 This extendability is essential to allow to anyone to create tokens which inherit from CMTA Token behavior. 
 
 One may want to override the default behavior provided by the `CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE` module.
-Here's a harmless override where the pause entrypoint can only be called by the `issuer` (that we just defined previously int he extension) or the administrator
+Here's an example of an override where the pause entrypoint can only be called by the `issuer` (that we just defined previously in the extension) or the administrator (thus ignoring the PAUSER role).
 
 ```
 [@entry]
@@ -97,9 +127,51 @@ let pause (p : Token.ADMINISTRATION.pause_param) (s : storage) : ret =
 ```
 Notice that in this snippet of code, we do not use the `Token.pause` function but we use the sub-module `Token.ADMINISTRATION` in order to squizz the default role verification.
 
+The error message is defined in an `Errors` sub module.
+```
+module Errors = struct
+  let not_issuer_nor_admin = "Not issuer not admin"
+end
+```
+
+### Declare entrypoints 
+
+In order to finish the implementation of the custom CMTA Token, all expected entrypoints must be declared (and implemented).
+
+Check the test [example](./test/cmtat/extended_cmtat_single_asset.instance.mligo) for an exhaustive snippet of code that defines all entrypoints. (Careful ! in the example the `pause` entrypoint has been overridden, consider the commented section instead).
+
+```
+[@entry]
+let transfer (t : Token.TZIP12.transfer) (s : storage) : ret =
+  Token.transfer t s
+
+[@view]
+let get_balance (p : (address * nat)) (s : storage) : nat =
+  Token.get_balance p s
 
 
-## CMTAT modules
+// [@entry]
+// let pause (t : Token.ADMINISTRATION.pause_param) (s : storage) : ret =
+//   Token.pause t s
+
+// Exemple of override of pause Entrypoint
+[@entry]
+let pause (p : Token.ADMINISTRATION.pause_param) (s : storage) : ret =
+  let sender = Tezos.get_sender() in
+  let () = assert_with_error ((sender = s.extension.issuer) || (sender = s.administration.admin)) Errors.not_issuer_nor_admin in
+  [], { s with administration = Token.ADMINISTRATION.pause p s.administration }
+
+[@entry]
+let mint (p: Token.mint_param) (s: storage) : ret =
+  Token.mint p s
+
+[@entry]
+let burn (p: Token.burn_param) (s: storage) : ret =
+  Token.burn p s
+```
+
+
+## CMTAT sub modules
 
 ### FA2 (TZIP-12 standard)
 
