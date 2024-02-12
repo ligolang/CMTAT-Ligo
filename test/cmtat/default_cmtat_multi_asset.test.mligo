@@ -1,9 +1,6 @@
-// #import "extended_cmtat_multi_asset.instance.mligo" "CMTAT_multi_asset"
-
 #import "../../lib/main.mligo" "CMTAT"
 // use the "final" multi asset (no extension)
 module CMTAT_multi_asset = CMTAT.CMTAT_MULTI_ASSET
-
 
 #import "../helpers/list.mligo" "List_helper"
 #import "../helpers/totalsupply_view_caller_contract.mligo" "Caller"
