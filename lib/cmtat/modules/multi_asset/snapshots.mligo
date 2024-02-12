@@ -180,7 +180,8 @@ let update_totalsupply_snapshot (current_scheduled_snapshot: timestamp) (token_i
 
 let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2.MultiAssetExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots: t) : t =
     let (from_, to_, amt, token_id) = tr in
-    if (amt = 0n) then
+    // Do nothing when amount is 0 or no recipient to modify 
+    if (amt = 0n) || (Option.is_none(from_) && Option.is_none(to_)) then
         snapshots
     else
         // Retrieve current scheduled time

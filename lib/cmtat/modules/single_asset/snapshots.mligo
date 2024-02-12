@@ -64,7 +64,7 @@ let rescheduleSnapshot (old_time : timestamp) (new_time : timestamp) (snapshots:
         if (x = old_time) then
             [new_time]
         else
-            [x]
+            [x]  // TODO - should error ?
     | _ -> 
         let assert_below_upper_bound (time: timestamp) (upperbound: timestamp) : unit = 
             if (time > upperbound) then
@@ -174,7 +174,8 @@ let update_totalsupply_snapshot (current_scheduled_snapshot: timestamp) (_token_
 
 let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2.SingleAssetExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots: t) : t =
     let (from_, to_, amt, _token_id) = tr in
-    if (amt = 0n) then
+    if (amt = 0n)  || (Option.is_none(from_) && Option.is_none(to_)) then
+    //if (amt = 0n) then
         snapshots
     else
         // Retrieve current scheduled time
