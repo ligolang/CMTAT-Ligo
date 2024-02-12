@@ -25,8 +25,12 @@ compile: ## compile contracts
 	@$(call compile,../test/cmtat/extended_cmtat_single_asset.instance.mligo,cmtat/extended_cmtat_single_asset.mligo.tz)
 	@$(call compile,../test/cmtat/extended_cmtat_single_asset.instance.mligo,cmtat/extended_cmtat_single_asset.mligo.json,--michelson-format json)
 
+	@$(call compile,cmtat/asset/cmtat_multi_asset.impl.mligo,cmtat/asset/cmtat_multi_asset.impl.mligo.tz)
 	@$(call compile,../test/cmtat/extended_cmtat_multi_asset.instance.mligo,cmtat/extended_cmtat_multiple_asset.mligo.tz)
+	@$(call compile,../test/cmtat/extended_cmtat_multi_asset.instance.mligo,cmtat/extended_cmtat_multiple_asset.mligo.json,--michelson-format json)
+
 	@$(call compile,../test/cmtat/extended_cmtat_nft_asset.instance.mligo,cmtat/extended_cmtat_nft_asset.mligo.tz)
+	@$(call compile,../test/cmtat/extended_cmtat_nft_asset.instance.mligo,cmtat/extended_cmtat_nft_asset.mligo.json,--michelson-format json)
 	@echo "Compiled contracts!"
 clean: ## clean up
 	@rm -rf compiled
@@ -50,6 +54,8 @@ install: ## install dependencies
 test: ## run tests (SUITE=permit make test)
 ifndef SUITE
 	@$(call test,cmtat/default_cmtat_single_asset.test.mligo)
+	@$(call test,cmtat/default_cmtat_multi_asset.test.mligo)
+	
 	@$(call test,cmtat/extended_cmtat_single_asset.fa2.test.mligo)
 	@$(call test,cmtat/extended_cmtat_single_asset.test.mligo)
 	@$(call test,cmtat/extended_cmtat_single_asset.snapshots.test.mligo)
