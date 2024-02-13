@@ -7,9 +7,9 @@ type t = {
 }
 
 module Errors = struct
-    let undefined_rule_engine = "Rule engine not defined"
-    let refused_by_rule_engine = "NOT_VALIDATED by rule engine"
-    let invalid_rule_engine = "The pointed rule engine does not have an on-chain view validateTransfer"
+    let undefined_rule_engine = "CMTAT_RULE_ENGINE_UNDEFINED" //"Rule engine not defined"
+    let refused_by_rule_engine = "CMTAT_RULE_ENGINE_REFUSED" //"NOT_VALIDATED by rule engine"
+    let invalid_rule_engine = "CMTAT_RULE_ENGINE_INVALID" //"The pointed rule engine does not have an on-chain view validateTransfer"
 end
 
 type rule_engine_param = address option
@@ -18,9 +18,6 @@ let set_rule_engine (p: rule_engine_param) (state: t) : t =
 
 let has_rule_engine (state: t) : bool = 
     Option.is_some state.rule_engine_contract
-
-// let assert_has_rule_engine (state: t) : unit = 
-//     assert_with_error (has_rule_engine(state)) Errors.undefined_rule_engine
 
 let validateTransfer (from_, to_, amount_: address * address * nat) (state: t) : bool =
     if has_rule_engine state then

@@ -3,15 +3,14 @@ type role = MINTER | BURNER | PAUSER | RULER | VALIDATOR | SNAPSHOOTER
 type t = (address, role set) big_map
 
 module Errors = struct
-    let unknown_user = "Unknown user (no role)"
-    let missing_role = "User do not have this role"
-
-    let not_ruler = "This user is not allowed to modify rules"
-    let not_minter = "This user is not allowed to mint assets"
-    let not_burner = "This user is not allowed to burn assets"
-    let not_pauser = "This user is not allowed to pause the contract"
-    let not_validator = "This user is not allowed to change rule engine contract address"
-    let not_snapshooter = "This user is not allowed to schedule snapshots"
+    let unknown_user = "CMTAT_ROLE_UNKNOWN_USER" //"Unknown user (no role)"
+    let missing_role = "CMTAT_ROLE_MISSING" //"User do not have this role"
+    let not_ruler = "CMTAT_ROLE_NOT_RULER" //"This user is not allowed to modify rules"
+    let not_minter = "CMTAT_ROLE_NOT_MINTER" //"This user is not allowed to mint assets"
+    let not_burner = "CMTAT_ROLE_NOT_BURNER" //"This user is not allowed to burn assets"
+    let not_pauser = "CMTAT_ROLE_NOT_PAUSER" //"This user is not allowed to pause the contract"
+    let not_validator = "CMTAT_ROLE_NOT_VALIDATOR" //"This user is not allowed to change rule engine contract address"
+    let not_snapshooter = "CMTAT_ROLE_NOT_SNAPSHOOTER" //"This user is not allowed to schedule snapshots"
 end
 
 type grant_role_param = address * role

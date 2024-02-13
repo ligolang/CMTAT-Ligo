@@ -1,4 +1,3 @@
-// #import "../lib/multi_asset/fa2.mligo" "FA2"
 #import "@ligo/fa/lib/main.mligo" "FA2"
 #import "./totalsupply.mligo" "TOTALSUPPLY"
 
@@ -16,17 +15,17 @@ type t = {
 }
 
 module Errors = struct
-    let schedule_in_past = "Cannot schedule in the past"
-    let before_next_scheduled = "Proposed scheduled is before the next scheduled time"
-    let already_scheduled = "This snapshot time is already scheduled"
-    let rescheduled_after_next = "New scheduled is after next scheduled"
-    let rescheduled_before_previous = "New scheduled is before previous scheduled"
-    let snapshot_already_done = "Snapshot already done"
-    let no_snapshot_scheduled = "No scheduled snapshot"
-    let snapshot_not_found = "Snapshot not found"
+    let schedule_in_past = "CMTAT_SCHEDULE_IN_PAST" //"Cannot schedule in the past"
+    let before_next_scheduled = "CMTAT_SCHEDULE_BEFORE_NEXT" //"Proposed scheduled is before the next scheduled time"
+    let already_scheduled = "CMTAT_SCHEDULE_ALREADY_SCHEDULED" //"This snapshot time is already scheduled"
+    let rescheduled_after_next = "CMTAT_RESCHEDULE_AFTER_NEXT" //"New scheduled is after next scheduled"
+    let rescheduled_before_previous = "CMTAT_RESCHEDULE_BEFORE_PREVIOUS" //"New scheduled is before previous scheduled"
+    let snapshot_already_done = "CMTAT_SNAPSHOT_ALREADY_DONE" //"Snapshot already done"
+    let no_snapshot_scheduled = "CMTAT_NO_SCHEDULED_SNAPSHOT" //"No scheduled snapshot"
+    let snapshot_not_found = "CMTAT_SNAPSHOT_UNKNOWN" //"Snapshot not found"
 end
 
-// TODO
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper
 let reverse (type a) (xs : a list) : a list =
     let f (ys,x : (a list * a)) : a list = x :: ys in
@@ -35,6 +34,7 @@ let reverse (type a) (xs : a list) : a list =
 let get_for_user_curried (ledger, owner: FA2.SingleAssetExtendable.ledger * address) = 
     FA2.SingleAssetExtendable.get_for_user ledger owner
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 let scheduleSnapshot (proposed : timestamp) (snapshots:t) : t =
     // check if in the past
@@ -174,8 +174,8 @@ let update_totalsupply_snapshot (current_scheduled_snapshot: timestamp) (_token_
 
 let update_atomic (tr: address option * address option * nat * nat) (ledger: FA2.SingleAssetExtendable.ledger) (totalsupplies: TOTALSUPPLY.t) (snapshots: t) : t =
     let (from_, to_, amt, _token_id) = tr in
-    if (amt = 0n)  || (Option.is_none(from_) && Option.is_none(to_)) then
-    //if (amt = 0n) then
+    // Do nothing when amount is 0 or no recipient to modify 
+    if (amt = 0n) || (Option.is_none(from_) && Option.is_none(to_)) then
         snapshots
     else
         // Retrieve current scheduled time

@@ -1,9 +1,6 @@
 #import "extended_cmtat_multi_asset.instance.mligo" "CMTAT_multi_asset"
 #import "../helpers/list.mligo" "List_helper"
-// #import "../../lib/fa2/asset/multi_asset.impl.mligo" "CMTAT_multi_asset.Token.FA2.MultiAssetExtendable"
-// #import "./balance_of_callback_contract.mligo" "Callback"
 #import "../helpers/balance_of_callback_contract.mligo" "Callback"
-
 
 // alias
 module TZIP12 = CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.TZIP12

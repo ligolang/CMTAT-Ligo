@@ -2,6 +2,7 @@
 #import "../helpers/list.mligo" "List_helper"
 #import "../helpers/balance_of_callback_contract.mligo" "Callback"
 
+module TZIP12 = CMTAT_single_asset.CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE.TZIP12
 
 let get_initial_storage (a, b, c : nat * nat * nat) =
   let () = Test.reset_state 6n ([] : tez list) in
@@ -105,54 +106,12 @@ let assert_balances
   in
   ()
 
-// let assert_paused
-//   (contract_address : (CMTAT_single_asset parameter_of, CMTAT_single_asset.storage) typed_address )
-//   (expected : bool) =
-//   let storage = Test.get_storage contract_address in
-//   let administration = storage.administration in
-//   assert (administration.paused = expected)
-
 let assert_totalsupply
   (contract_address : (CMTAT_single_asset parameter_of, CMTAT_single_asset.storage) typed_address )
   (expected : nat) =
   let storage = Test.get_storage contract_address in
   let actual = storage.totalsupplies in
   assert (actual = expected)
-
-// let assert_role
-//   (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
-//   (user : address)
-//   (expected_role: CMTAT_single_asset.Token.AUTHORIZATIONS.role) =
-//     let storage = Test.get_storage contract_address in
-//     match Big_map.find_opt user storage.authorizations with
-//     | Some(flags) -> assert (Set.mem expected_role flags)
-//     | None -> failwith "[assert_role] Unknown user"
-
-// let assert_not_role
-//   (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
-//   (user : address)
-//   (expected_role: CMTAT_single_asset.Token.AUTHORIZATIONS.role) =
-//     let storage = Test.get_storage contract_address in
-//     match Big_map.find_opt user storage.authorizations with
-//     | Some(flags) -> assert (not (Set.mem expected_role flags))
-//     | None -> failwith "[assert_not_role] Unknown user"
-
-// let assert_no_role
-//   (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
-//   (user : address) =
-//     let storage = Test.get_storage contract_address in
-//     match Big_map.find_opt user storage.authorizations with
-//     | Some(_flags) -> failwith "[assert_no_role] User should not have role"
-//     | None -> ()
-
-// (* Assert contract call results in failwith with given string *)
-// let string_failure (res : test_exec_result) (expected : string) : unit =
-//     let expected = Test.eval expected in
-//     match res with
-//         | Fail (Rejected (actual,_)) -> assert (actual = expected)
-//         | Fail (Balance_too_low _err) -> Test.failwith "contract failed: balance too low"
-//         | Fail (Other s) -> Test.failwith s
-//         | Success _ -> Test.failwith "Transaction should fail"
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -181,9 +140,9 @@ let test_atomic_transfer_success =
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
@@ -201,9 +160,9 @@ let test_atomic_transfer_failure_not_operator =
   let owner3 = List_helper.nth_exn 2 owners in
   let op3    = List_helper.nth_exn 2 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=2n};{to_=owner3;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op3 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
@@ -222,9 +181,9 @@ let test_atomic_transfer_failure_not_suffient_balance =
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=20n};{to_=owner3;token_id=0n;amount=3n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=20n};{to_=owner3;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner3;token_id=0n;amount=2n};{to_=owner1;token_id=0n;amount=3n}] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
@@ -243,9 +202,9 @@ let test_atomic_transfer_success_zero_amount_and_self_transfer =
   let owner3 = List_helper.nth_exn 2 owners in
   let op1    = List_helper.nth_exn 0 operators in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=0n};{to_=owner3;token_id=0n;amount=0n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner2;token_id=0n;amount=2n};] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=0n};{to_=owner3;token_id=0n;amount=0n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner2;token_id=0n;amount=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
@@ -262,8 +221,8 @@ let test_transfer_failure_transitive_operators =
   let owner3 = List_helper.nth_exn 2 owners in
   let op2    = List_helper.nth_exn 1 operators in
   let transfer_requests = ([
-      ({from_=owner3; txs=([{to_=owner2;token_id=0n;amount=2n};] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.transfer)
+      ({from_=owner3; txs=([{to_=owner2;token_id=0n;amount=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let () = Test.set_source op2 in
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
@@ -282,9 +241,9 @@ let test_empty_transfer_and_balance_of =
   let orig_callback = Test.originate (contract_of Callback) ([] : nat list) 0tez in
 
   let balance_of_requests = ({
-    requests = ([] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.request list);
+    requests = ([] : TZIP12.request list);
     callback = Test.to_contract orig_callback.addr;
-  } : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.balance_of) in
+  } : TZIP12.balance_of) in
 
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
 
@@ -308,9 +267,9 @@ let test_balance_of_requests_with_duplicates =
       {owner=owner1;token_id=0n};
       {owner=owner2;token_id=0n};
       {owner=owner1;token_id=0n};
-    ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.request list);
+    ] : TZIP12.request list);
     callback = Test.to_contract orig_callback.addr;
-  } : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.balance_of) in
+  } : TZIP12.balance_of) in
 
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
 
@@ -334,9 +293,9 @@ let test_balance_of_0_balance_if_address_does_not_hold_tokens =
       {owner=owner1;token_id=0n};
       {owner=owner2;token_id=0n};
       {owner=op1;token_id=0n};
-    ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.request list);
+    ] : TZIP12.request list);
     callback = Test.to_contract orig_callback.addr;
-  } : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.balance_of) in
+  } : TZIP12.balance_of) in
 
   let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
 
@@ -364,14 +323,14 @@ let test_update_operator_remove_operator_and_transfer =
         owner    = owner1;
         operator = op1;
         token_id = 0n;
-      } : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.operator) : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.unit_update)
-    ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.update_operators)) 0tez in
+      } : TZIP12.operator) : TZIP12.unit_update)
+    ] : TZIP12.update_operators)) 0tez in
 
   let () = Test.set_source op1 in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=0n};{to_=owner3;token_id=0n;amount=0n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner2;token_id=0n;amount=2n};] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=0n};{to_=owner3;token_id=0n;amount=0n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner2;token_id=0n;amount=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let result = Test.transfer orig.addr (Transfer transfer_requests) 0tez in
   match result with
@@ -396,8 +355,8 @@ let test_update_operator_add_operator_and_transfer =
         owner    = owner1;
         operator = op3;
         token_id = 0n;
-      } : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.operator) : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.unit_update);
-    ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.update_operators)) 0tez in
+      } : TZIP12.operator) : TZIP12.unit_update);
+    ] : TZIP12.update_operators)) 0tez in
 
   let () = Test.set_source owner2 in
   let _ = Test.transfer_exn orig.addr
@@ -406,14 +365,14 @@ let test_update_operator_add_operator_and_transfer =
         owner    = owner2;
         operator = op3;
         token_id = 0n;
-      } : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.operator) : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.unit_update);
-    ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.update_operators)) 0tez in
+      } : TZIP12.operator) : TZIP12.unit_update);
+    ] : TZIP12.update_operators)) 0tez in
 
   let () = Test.set_source op3 in
   let transfer_requests = ([
-    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=0n};{to_=owner3;token_id=0n;amount=0n}] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-    ({from_=owner2; txs=([{to_=owner2;token_id=0n;amount=2n};] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.atomic_trans list)});
-  ] : CMTAT_single_asset.Token.FA2.SingleAssetExtendable.TZIP12.transfer)
+    ({from_=owner1; txs=([{to_=owner2;token_id=0n;amount=0n};{to_=owner3;token_id=0n;amount=0n}] : TZIP12.atomic_trans list)});
+    ({from_=owner2; txs=([{to_=owner2;token_id=0n;amount=2n};] : TZIP12.atomic_trans list)});
+  ] : TZIP12.transfer)
   in
   let _ = Test.transfer_exn orig.addr (Transfer transfer_requests) 0tez in
   ()
