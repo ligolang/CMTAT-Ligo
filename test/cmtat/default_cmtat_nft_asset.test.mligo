@@ -795,6 +795,29 @@ let test_grant_role_success_simple =
   let () = assert_role addr owner1 flag in
   ()
 
+let test_grant_role_success_with_ruler =
+  let initial_storage, owners, operators = get_initial_storage () in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+    // GRANT RULER ROLE 
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_ruler : CMTAT_nft_asset.AUTHORIZATIONS.role = RULER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op2, flag_ruler)) 0tez in
+  let () = assert_role addr op2 flag_ruler in
+  // GRANT ROLE 
+  let () = Test.set_source op2 in
+  let flag : CMTAT_nft_asset.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag)) 0tez in
+  let () = assert_role addr owner1 flag in
+  ()
+
+
 let test_grant_role_success_multiple =
   let initial_storage, owners, operators = get_initial_storage () in
   let owner1 = List_helper.nth_exn 0 owners in
@@ -814,7 +837,7 @@ let test_grant_role_success_multiple =
   ()
 
 
-let test_grant_role_failure_not_admin =
+let test_grant_role_failure_not_ruler =
   let initial_storage, owners, operators = get_initial_storage () in
   let owner1 = List_helper.nth_exn 0 owners in
   let owner2 = List_helper.nth_exn 1 owners in
@@ -826,11 +849,11 @@ let test_grant_role_failure_not_admin =
   let () = Test.set_source owner2 in
   let flag_minter : CMTAT_nft_asset.AUTHORIZATIONS.role = MINTER in
   let r = Test.transfer_to_contract contr (GrantRole (owner1, flag_minter)) 0tez in
-  let () = string_failure r CMTAT_nft_asset.ADMINISTRATION.Errors.not_admin in
+  let () = string_failure r CMTAT_nft_asset.AUTHORIZATIONS.Errors.not_ruler in
   let () = assert_no_role addr owner1 in
   ()
 
-let test_revoke_role_success =
+let test_revoke_role_success_with_admin =
   let initial_storage, owners, operators = get_initial_storage () in
   let owner1 = List_helper.nth_exn 0 owners in
   let _owner2 = List_helper.nth_exn 1 owners in
@@ -848,6 +871,56 @@ let test_revoke_role_success =
   let _ = Test.transfer_to_contract_exn contr (RevokeRole (owner1, flag_burner)) 0tez in
   let () = assert_role addr owner1 flag_minter in
   let () = assert_not_role addr owner1 flag_burner in
+  ()
+
+let test_revoke_role_success_with_ruler =
+  let initial_storage, owners, operators = get_initial_storage () in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+  // GRANT RULER ROLE
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_ruler : CMTAT_nft_asset.AUTHORIZATIONS.role = RULER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op2, flag_ruler)) 0tez in
+  // GRANT ROLE with RULER
+  let () = Test.set_source op2 in
+  let flag_minter : CMTAT_nft_asset.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_minter)) 0tez in
+  // GRANT ROLE with RULER
+  let flag_burner : CMTAT_nft_asset.AUTHORIZATIONS.role = BURNER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_burner)) 0tez in
+  // REVOKE ROLE with RULER
+  let flag_burner : CMTAT_nft_asset.AUTHORIZATIONS.role = BURNER in
+  let _ = Test.transfer_to_contract_exn contr (RevokeRole (owner1, flag_burner)) 0tez in
+  let () = assert_role addr owner1 flag_minter in
+  let () = assert_not_role addr owner1 flag_burner in
+  ()
+
+let test_revoke_role_failure_not_ruler =
+  let initial_storage, owners, operators = get_initial_storage () in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_nft_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+  // GRANT ROLE with admin
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_minter : CMTAT_nft_asset.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_minter)) 0tez in
+  // REVOKE ROLE with not RULER - fails
+  let () = Test.set_source op2 in
+  let flag_burner : CMTAT_nft_asset.AUTHORIZATIONS.role = MINTER in
+  let r = Test.transfer_to_contract contr (RevokeRole (owner2, flag_burner)) 0tez in
+  let () = string_failure r CMTAT_nft_asset.AUTHORIZATIONS.Errors.not_ruler in 
+  let () = assert_role addr owner1 flag_minter in
   ()
 
 let test_revoke_role_failure_unknown_user =
