@@ -312,9 +312,9 @@ Functions provided by the library for Single asset configuration.
 | message code                | Explanation                                                     | module         | triggered by         |
 |-----------------------------|-----------------------------------------------------------------|----------------|----------------------|
 | CMTAT_NOT_ADMIN             | Not admin                                                       | ADMINISTRATION | grantRole, revokeRole |
-| CMTAT_CONTRACT_PAUSED       | The contract is paused                                          | ADMINISTRATION | <all> |
-| CMTAT_CONTRACT_KILLED       | The contract is killed                                          | ADMINISTRATION | <all> |
-| CMTAT_TOTALSUPPLY_INSUFFICIENT_BALANCE  | Not enough supply                                   | TOTALSUPPLY    | ???????????? |
+| CMTAT_CONTRACT_PAUSED       | The contract is paused                                          | ADMINISTRATION | \<all\> |
+| CMTAT_CONTRACT_KILLED       | The contract is killed                                          | ADMINISTRATION | \<all\> |
+| CMTAT_TOTALSUPPLY_INSUFFICIENT_BALANCE  | Not enough supply                                   | TOTALSUPPLY    | burn |
 | CMTAT_SCHEDULE_IN_PAST      | Cannot schedule in the past                                     | SNAPSHOTS      | scheduleSnapshot, rescheduleSnapshot |
 | CMTAT_SCHEDULE_BEFORE_NEXT  | Proposed scheduled is before the next scheduled time            | SNAPSHOTS      | scheduleSnapshot |
 | CMTAT_SCHEDULE_ALREADY_SCHEDULED  | This snapshot time is already scheduled                   | SNAPSHOTS      | scheduleSnapshot |
@@ -333,7 +333,7 @@ Functions provided by the library for Single asset configuration.
 | CMTAT_ROLE_NOT_BURNER       | This user is not allowed to burn assets                         | AUTHORIZATIONS | burn |
 | CMTAT_ROLE_NOT_PAUSER       | This user is not allowed to pause the contract                  | AUTHORIZATIONS | pause |
 | CMTAT_ROLE_NOT_VALIDATOR    | This user is not allowed to change rule engine contract address | AUTHORIZATIONS | setRuleEngine |
-| CMTAT_ROLE_NOT_SNAPSHOOTER  | This user is not allowed to schedule snapshots                  | AUTHORIZATIONS | scheduleSnapshot, rescheduleSnapshot,  |unscheduleSnapshot
+| CMTAT_ROLE_NOT_SNAPSHOOTER  | This user is not allowed to schedule snapshots                  | AUTHORIZATIONS | scheduleSnapshot, rescheduleSnapshot,unscheduleSnapshot   |
 
 
 
