@@ -199,13 +199,15 @@ let burn (type a) (p: burn_param) (s: a storage) : a ret =
 
 let grantRole (type a) (p: address * AUTHORIZATIONS.role) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
-    let () = assert_with_error (Tezos.get_sender() = s.administration.admin) ADMINISTRATION.Errors.not_admin in
+    let sender = Tezos.get_sender() in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, RULER) s.authorizations)) AUTHORIZATIONS.Errors.not_ruler in
     [], { s with authorizations = AUTHORIZATIONS.grantRole p s.authorizations }
 
 
 let revokeRole (type a) (p: address * AUTHORIZATIONS.role) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
-    let () = assert_with_error (Tezos.get_sender() = s.administration.admin) ADMINISTRATION.Errors.not_admin in
+    let sender = Tezos.get_sender() in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, RULER) s.authorizations)) AUTHORIZATIONS.Errors.not_ruler in
     [], { s with authorizations = AUTHORIZATIONS.revokeRole p s.authorizations }
 
 

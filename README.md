@@ -2,17 +2,14 @@
 
 TODO list
 
-- rework error message ? CMTAT_SNAPSHOT_ALREADY_SCHEDULED ....
 - rework interface ? burn_param ... 
 - snapshots extra tests for multi ?
 - optimization (snapshot list search) ?
 - rework NFT (snapshot, totalsupply) - PR In draft ... relevant ?  
-- RULER role is not used , add tests
 
 Other considerations
 
 - should the authorization module take the token_id into account ? a different minter per token_id in a multi asset configuration
-
 - should the snapshot module update snapshot balance in beforeHookTransfer ? (or afterhooktransfer)
 
 
@@ -311,7 +308,7 @@ Functions provided by the library for Single asset configuration.
 
 | message code                | Explanation                                                     | module         | triggered by         |
 |-----------------------------|-----------------------------------------------------------------|----------------|----------------------|
-| CMTAT_NOT_ADMIN             | Not admin                                                       | ADMINISTRATION | grantRole, revokeRole |
+| CMTAT_NOT_ADMIN             | Not admin                                                       | ADMINISTRATION | kill |
 | CMTAT_CONTRACT_PAUSED       | The contract is paused                                          | ADMINISTRATION | \<all\> |
 | CMTAT_CONTRACT_KILLED       | The contract is killed                                          | ADMINISTRATION | \<all\> |
 | CMTAT_TOTALSUPPLY_INSUFFICIENT_BALANCE  | Not enough supply                                   | TOTALSUPPLY    | burn |
@@ -323,12 +320,12 @@ Functions provided by the library for Single asset configuration.
 | CMTAT_SNAPSHOT_ALREADY_DONE | Snapshot already done                                           | SNAPSHOTS      | unscheduleSnapshot, rescheduleSnapshot |
 | CMTAT_NO_SCHEDULED_SNAPSHOT | No scheduled snapshot                                           | SNAPSHOTS      | unscheduleSnapshot |
 | CMTAT_SNAPSHOT_UNKNOWN      | Snapshot not found                                              | SNAPSHOTS      | unscheduleSnapshot |
-| CMTAT_RULE_ENGINE_UNDEFINED | Rule engine not defined                                         | VALIDATION     | ?????????? |
+| CMTAT_RULE_ENGINE_UNDEFINED | Rule engine not defined                                         | VALIDATION     | ?  |
 | CMTAT_RULE_ENGINE_REFUSED   | NOT_VALIDATED by rule engine                                    | VALIDATION     | assert_validateTransfer |
 | CMTAT_RULE_ENGINE_INVALID   | The pointed rule engine does not have an on-chain view validateTransfer  | VALIDATION   | validateTransfer |
 | CMTAT_ROLE_UNKNOWN_USER     | Unknown user (no role)                                          | AUTHORIZATIONS | revokeRole |
 | CMTAT_ROLE_MISSING          | User do not have this role                                      | AUTHORIZATIONS | revokeRole |
-| CMTAT_ROLE_NOT_RULER        | This user is not allowed to modify rules                        | AUTHORIZATIONS |  ??????????? |
+| CMTAT_ROLE_NOT_RULER        | This user is not allowed to modify rules                        | AUTHORIZATIONS | grantRole, revokeRole |
 | CMTAT_ROLE_NOT_MINTER       | This user is not allowed to mint assets                         | AUTHORIZATIONS | mint |
 | CMTAT_ROLE_NOT_BURNER       | This user is not allowed to burn assets                         | AUTHORIZATIONS | burn |
 | CMTAT_ROLE_NOT_PAUSER       | This user is not allowed to pause the contract                  | AUTHORIZATIONS | pause |
