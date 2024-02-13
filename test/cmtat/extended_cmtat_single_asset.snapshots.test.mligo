@@ -586,4 +586,76 @@ let test_snapshot_balanceof_view_success_multiple_with_bake =
   let () = assert(storage_caller = 12n) in
   ()
 
+///////////////////////////////////////////////////////////////////////////////////////
+let test_reschedule_snapshot_failure_in_past =
+  let initial_storage, owners, operators = get_initial_storage_at ("2024-01-01t00:00:00Z" : timestamp) (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let _op2    = List_helper.nth_exn 1 operators in
+  let _op3    = List_helper.nth_exn 2 operators in
+
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let contr = Test.to_contract orig.addr in 
+  let _fa2_address : address = Tezos.address contr in
+
+  // TIME = "2024-01-01t00:03:06Z"
+  // SCHEDULESNAPSHOT
+  let snapshot_time_0 = ("2024-01-01t00:10:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  // TIME = "2024-01-01t00:03:36Z"
+  // SCHEDULESNAPSHOT
+  let snapshot_time_1 = ("2024-01-01t03:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  let () = Test.bake_until_n_cycle_end 1n in
+  // TIME > "2024-01-01t00:30:00Z"
+
+  // RESCHEDULE
+  let snapshot_time_0_resched = ("2024-01-01t00:03:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (RescheduleSnapshot (snapshot_time_0, snapshot_time_0_resched)) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.schedule_in_past in
+  ()
+
+
+let test_unschedule_snapshot_failure_in_past =
+  let initial_storage, owners, operators = get_initial_storage_at ("2024-01-01t00:00:00Z" : timestamp) (10n, 10n, 10n) in
+  let _owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let _op2    = List_helper.nth_exn 1 operators in
+  let _op3    = List_helper.nth_exn 2 operators in
+
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  let contr = Test.to_contract orig.addr in 
+  let _fa2_address : address = Tezos.address contr in
+
+  // TIME = "2024-01-01t00:03:06Z"
+  // SCHEDULESNAPSHOT
+  let snapshot_time_0 = ("2024-01-01t00:10:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+
+  // TIME = "2024-01-01t00:03:36Z"
+  // SCHEDULESNAPSHOT
+  let snapshot_time_1 = ("2024-01-01t03:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_1) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_1 in
+
+  let () = Test.bake_until_n_cycle_end 1n in
+  // TIME > "2024-01-01t00:30:00Z"
+
+  // UNSCHEDULE
+  let r = Test.transfer orig.addr (UnscheduleSnapshot snapshot_time_0) 0tez in
+  let () = string_failure r CMTAT_single_asset.Token.SNAPSHOTS.Errors.snapshot_already_done in
+  ()
 

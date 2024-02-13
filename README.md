@@ -3,9 +3,9 @@
 TODO list
 
 - rework interface ? burn_param ... 
-- snapshots extra tests for multi ?
-- optimization (snapshot list search) ?
+- snapshots extra tests for nft ?
 - rework NFT (snapshot, totalsupply) - PR In draft ... relevant ?  
+- optimization (snapshot list search) ?
 
 Other considerations
 

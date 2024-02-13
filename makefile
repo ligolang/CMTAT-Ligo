@@ -64,6 +64,7 @@ ifndef SUITE
 
 	@$(call test,cmtat/extended_cmtat_multi_asset.fa2.test.mligo)
 	@$(call test,cmtat/extended_cmtat_multi_asset.test.mligo)
+	@$(call test,cmtat/extended_cmtat_multi_asset.snapshots.test.mligo)
 
 	@$(call test,cmtat/extended_cmtat_nft_asset.fa2.test.mligo)
 	@$(call test,cmtat/extended_cmtat_nft_asset.test.mligo)
