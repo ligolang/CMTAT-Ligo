@@ -1,4 +1,3 @@
-// #import "../lib/multi_asset/fa2.mligo" "FA2"
 #import "@ligo/fa/lib/main.mligo" "FA2"
 #import "./totalsupply.mligo" "TOTALSUPPLY"
 
@@ -16,14 +15,14 @@ type t = {
 }
 
 module Errors = struct
-    let schedule_in_past = "Cannot schedule in the past"
-    let before_next_scheduled = "Proposed scheduled is before the next scheduled time"
-    let already_scheduled = "This snapshot time is already scheduled"
-    let rescheduled_after_next = "New scheduled is after next scheduled"
-    let rescheduled_before_previous = "New scheduled is before previous scheduled"
-    let snapshot_already_done = "Snapshot already done"
-    let no_snapshot_scheduled = "No scheduled snapshot"
-    let snapshot_not_found = "Snapshot not found"
+    let schedule_in_past = "CMTAT_SCHEDULE_IN_PAST" //"Cannot schedule in the past"
+    let before_next_scheduled = "CMTAT_SCHEDULE_BEFORE_NEXT" //"Proposed scheduled is before the next scheduled time"
+    let already_scheduled = "CMTAT_SCHEDULE_ALREADY_SCHEDULED" //"This snapshot time is already scheduled"
+    let rescheduled_after_next = "CMTAT_RESCHEDULE_AFTER_NEXT" //"New scheduled is after next scheduled"
+    let rescheduled_before_previous = "CMTAT_RESCHEDULE_BEFORE_PREVIOUS" //"New scheduled is before previous scheduled"
+    let snapshot_already_done = "CMTAT_SNAPSHOT_ALREADY_DONE" //"Snapshot already done"
+    let no_snapshot_scheduled = "CMTAT_NO_SCHEDULED_SNAPSHOT" //"No scheduled snapshot"
+    let snapshot_not_found = "CMTAT_SNAPSHOT_UNKNOWN" //"Snapshot not found"
 end
 
 // Helpers

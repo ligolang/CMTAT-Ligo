@@ -6,7 +6,8 @@ TODO list
 - rework interface ? burn_param ... 
 - snapshots extra tests for multi ?
 - optimization (snapshot list search) ?
-- rework NFT (snapshot, totalsupply) - PR In draft ... relevant ? 
+- rework NFT (snapshot, totalsupply) - PR In draft ... relevant ?  
+- RULER role is not used , add tests
 
 Other considerations
 
@@ -305,6 +306,35 @@ Functions provided by the library for Single asset configuration.
 | getNextSnapshots    | unit                                      | timestamp list | SNAPSHOTS                 |
 | snapshotTotalsupply | timestamp * nat                           | nat            | SNAPSHOTS                 |
 | snapshotBalanceOf   | timestamp * address * nat                 | nat            | SNAPSHOTS                 |
+
+## Error messages
+
+| message code                | Explanation                                                     | module         | triggered by         |
+|-----------------------------|-----------------------------------------------------------------|----------------|----------------------|
+| CMTAT_NOT_ADMIN             | Not admin                                                       | ADMINISTRATION | grantRole, revokeRole |
+| CMTAT_CONTRACT_PAUSED       | The contract is paused                                          | ADMINISTRATION | <all> |
+| CMTAT_CONTRACT_KILLED       | The contract is killed                                          | ADMINISTRATION | <all> |
+| CMTAT_TOTALSUPPLY_INSUFFICIENT_BALANCE  | Not enough supply                                   | TOTALSUPPLY    | ???????????? |
+| CMTAT_SCHEDULE_IN_PAST      | Cannot schedule in the past                                     | SNAPSHOTS      | scheduleSnapshot, rescheduleSnapshot |
+| CMTAT_SCHEDULE_BEFORE_NEXT  | Proposed scheduled is before the next scheduled time            | SNAPSHOTS      | scheduleSnapshot |
+| CMTAT_SCHEDULE_ALREADY_SCHEDULED  | This snapshot time is already scheduled                   | SNAPSHOTS      | scheduleSnapshot |
+| CMTAT_RESCHEDULE_AFTER_NEXT | New scheduled is after next scheduled                           | SNAPSHOTS      | rescheduleSnapshot |
+| CMTAT_RESCHEDULE_BEFORE_PREVIOUS  | New scheduled is before previous scheduled                | SNAPSHOTS      | rescheduleSnapshot |
+| CMTAT_SNAPSHOT_ALREADY_DONE | Snapshot already done                                           | SNAPSHOTS      | unscheduleSnapshot, rescheduleSnapshot |
+| CMTAT_NO_SCHEDULED_SNAPSHOT | No scheduled snapshot                                           | SNAPSHOTS      | unscheduleSnapshot |
+| CMTAT_SNAPSHOT_UNKNOWN      | Snapshot not found                                              | SNAPSHOTS      | unscheduleSnapshot |
+| CMTAT_RULE_ENGINE_UNDEFINED | Rule engine not defined                                         | VALIDATION     | ?????????? |
+| CMTAT_RULE_ENGINE_REFUSED   | NOT_VALIDATED by rule engine                                    | VALIDATION     | assert_validateTransfer |
+| CMTAT_RULE_ENGINE_INVALID   | The pointed rule engine does not have an on-chain view validateTransfer  | VALIDATION   | validateTransfer |
+| CMTAT_ROLE_UNKNOWN_USER     | Unknown user (no role)                                          | AUTHORIZATIONS | revokeRole |
+| CMTAT_ROLE_MISSING          | User do not have this role                                      | AUTHORIZATIONS | revokeRole |
+| CMTAT_ROLE_NOT_RULER        | This user is not allowed to modify rules                        | AUTHORIZATIONS |  ??????????? |
+| CMTAT_ROLE_NOT_MINTER       | This user is not allowed to mint assets                         | AUTHORIZATIONS | mint |
+| CMTAT_ROLE_NOT_BURNER       | This user is not allowed to burn assets                         | AUTHORIZATIONS | burn |
+| CMTAT_ROLE_NOT_PAUSER       | This user is not allowed to pause the contract                  | AUTHORIZATIONS | pause |
+| CMTAT_ROLE_NOT_VALIDATOR    | This user is not allowed to change rule engine contract address | AUTHORIZATIONS | setRuleEngine |
+| CMTAT_ROLE_NOT_SNAPSHOOTER  | This user is not allowed to schedule snapshots                  | AUTHORIZATIONS | scheduleSnapshot, rescheduleSnapshot,  |unscheduleSnapshot
+
 
 
 

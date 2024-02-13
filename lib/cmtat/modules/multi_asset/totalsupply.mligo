@@ -1,12 +1,9 @@
-
-
-//TODO
 type token_id = nat
 type amount_ = nat
 type t = (token_id, amount_) big_map
 
 module Errors = struct
-    let not_enough_supply = "Not enough supply"
+    let not_enough_supply = "CMTAT_TOTALSUPPLY_INSUFFICIENT_BALANCE" //"Not enough supply"
 end
 
 let get_total_supply (totalsupplies:t) (token_id : token_id) : amount_ =
