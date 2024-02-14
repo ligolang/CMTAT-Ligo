@@ -12,7 +12,6 @@ type operator = CmtatSingleAssetExtendable.operator
 
 type operators = CmtatSingleAssetExtendable.operators
 
-//TODO
 // type storage = unit CmtatSingleAssetExtendable.storage
 
 type storage =

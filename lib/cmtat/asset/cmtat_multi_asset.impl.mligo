@@ -12,7 +12,6 @@ type operator = CmtatMultiAssetExtendable.operator
 
 type operators = CmtatMultiAssetExtendable.operators
 
-//TODO
 // type storage = unit CmtatMultiAssetExtendable.storage
 
 type storage =

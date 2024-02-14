@@ -289,8 +289,30 @@ Functions provided by the library for Single asset configuration.
 | validateTransfer        | address * address * nat                      | VALIDATION                |
 | assert_validateTransfer | TZIP12.transfer                              | VALIDATION                |
 
+Functions provided by the library for Multi asset configuration.
+
+| function name           | parameter                                    |  module                   |
+|-------------------------|----------------------------------------------|---------------------------|
+| pause                   | bool                                         | ADMINISTRATION            |
+| transfer                | TZIP12.transfer                              | FA2.MultiAssetExtendable  |
+| balance_of              | TZIP12.balance_of                            | FA2.MultiAssetExtendable  |
+| update_operators        | TZIP12.update_operators                      | FA2.MultiAssetExtendable  |
+| mint                    | mint_param                                   | FA2.MultiAssetExtendable  |
+| burn                    | burn_param                                   | FA2.MultiAssetExtendable  |
+| kill                    | unit                                         | ADMINISTRATION            |
+| grantRole               | address * nat option * AUTHORIZATIONS.role   | AUTHORIZATIONS            |
+| revokeRole              | address * nat option * AUTHORIZATIONS.role   | AUTHORIZATIONS            |
+| scheduleSnapshot        | timestamp                                    | SNAPSHOTS                 |
+| rescheduleSnapshot      | timestamp * timestamp                        | SNAPSHOTS                 |
+| unscheduleSnapshot      | timestamp                                    | SNAPSHOTS                 |
+| setRuleEngine           | address option                               | VALIDATION                |
+| validateTransfer        | address * address * nat                      | VALIDATION                |
+| assert_validateTransfer | TZIP12.transfer                              | VALIDATION                |
+
 
 ## Library Views
+
+Views provided by the library for Single asset configuration.
 
 | view name           | parameter                                 | returned type  | module                    |
 |---------------------|-------------------------------------------|----------------|---------------------------|

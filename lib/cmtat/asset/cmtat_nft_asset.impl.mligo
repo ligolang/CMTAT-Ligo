@@ -12,7 +12,6 @@ type operator = CmtatNftAssetExtendable.operator
 
 type operators = CmtatNftAssetExtendable.operators
 
-//TODO
 // type storage = unit CmtatNftAssetExtendable.storage
 
 type storage =

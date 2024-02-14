@@ -70,8 +70,6 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
 
   let minter_role : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
   let burner_role : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  // let profil_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role set =  Set.add minter_role Set.empty in
-  // let profil_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role set =  Set.add burner_role Set.empty in
 
   let initial_storage: CMTAT_multi_asset.storage = {
       ledger         = ledger;
