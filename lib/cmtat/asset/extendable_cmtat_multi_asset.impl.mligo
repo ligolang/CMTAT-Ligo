@@ -200,14 +200,22 @@ let burn (type a) (p: burn_param) (s: a storage) : a ret =
 let grantRole (type a) (p: address * nat option * AUTHORIZATIONS.role) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, p.1, RULER) s.authorizations)) AUTHORIZATIONS.Errors.not_ruler in
+    let () = assert_with_error (
+        (sender = s.administration.admin) || 
+        (AUTHORIZATIONS.hasRole (sender, p.1, RULER) s.authorizations) ||
+        (AUTHORIZATIONS.hasRole (sender, None, RULER) s.authorizations)
+    ) AUTHORIZATIONS.Errors.not_ruler in
     [], { s with authorizations = AUTHORIZATIONS.grantRole p s.authorizations }
 
 
 let revokeRole (type a) (p: address * nat option * AUTHORIZATIONS.role) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, p.1, RULER) s.authorizations)) AUTHORIZATIONS.Errors.not_ruler in
+    let () = assert_with_error (
+        (sender = s.administration.admin) || 
+        (AUTHORIZATIONS.hasRole (sender, p.1, RULER) s.authorizations) ||
+        (AUTHORIZATIONS.hasRole (sender, None, RULER) s.authorizations)
+    ) AUTHORIZATIONS.Errors.not_ruler in
     [], { s with authorizations = AUTHORIZATIONS.revokeRole p s.authorizations }
 
 

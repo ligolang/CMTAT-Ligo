@@ -780,6 +780,29 @@ let test_grant_role_success_with_ruler =
   let () = assert_role addr owner1 (Some(1n)) flag in
   ()
 
+let test_grant_role_success_with_ruler_global =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+  // GRANT RULER ROLE GLOBAL
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_ruler : CMTAT_multi_asset.AUTHORIZATIONS.role = RULER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op2, None, flag_ruler)) 0tez in
+  let () = assert_role addr op2 None flag_ruler in
+  // GRANT ROLE 
+  let () = Test.set_source op2 in
+  let flag : CMTAT_multi_asset.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag)) 0tez in
+  let () = assert_role addr owner1 (Some(1n)) flag in
+  ()
+
+
 let test_grant_role_success_multiple =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in

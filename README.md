@@ -223,8 +223,8 @@ The *Authorizations* module also provides a function (`hasRole`) to verify if a 
 
 Attention ! Specifically for Multi asset configuration, 
 - MINTER, BURNER, RULER roles are specific to a `token_id` 
-- PAUSER, SNAPSHOOTER, VALIDATOR roles are global (not related to a specific `token_id`). 
-- the RULER role allows to grant/revoke role only on the same `token_id`. 
+- RULER, PAUSER, SNAPSHOOTER, VALIDATOR roles are global (not related to a specific `token_id`). 
+- the RULER role is both. It allows to grant/revoke role only on the same `token_id` (grant MINTER and BURNER role to someone). It also allows to grant RULER role on a specific `token_id` or to grant a global role (such as SNAPSHOOTER). 
 
 
 ### Validation
