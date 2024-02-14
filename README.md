@@ -3,9 +3,9 @@
 TODO list
 
 - rework interface ? burn_param ... 
-- snapshots extra tests for multi ?
-- optimization (snapshot list search) ?
+- snapshots extra tests for nft ?
 - rework NFT (snapshot, totalsupply) - PR In draft ... relevant ?  
+- optimization (snapshot list search) ?
 
 Other considerations
 
@@ -306,31 +306,31 @@ Functions provided by the library for Single asset configuration.
 
 ## Error messages
 
-| message code                | Explanation                                                     | module         | triggered by         |
-|-----------------------------|-----------------------------------------------------------------|----------------|----------------------|
-| CMTAT_NOT_ADMIN             | Not admin                                                       | ADMINISTRATION | kill |
-| CMTAT_CONTRACT_PAUSED       | The contract is paused                                          | ADMINISTRATION | \<all\> |
-| CMTAT_CONTRACT_KILLED       | The contract is killed                                          | ADMINISTRATION | \<all\> |
-| CMTAT_TOTALSUPPLY_INSUFFICIENT_BALANCE  | Not enough supply                                   | TOTALSUPPLY    | burn |
-| CMTAT_SCHEDULE_IN_PAST      | Cannot schedule in the past                                     | SNAPSHOTS      | scheduleSnapshot, rescheduleSnapshot |
-| CMTAT_SCHEDULE_BEFORE_NEXT  | Proposed scheduled is before the next scheduled time            | SNAPSHOTS      | scheduleSnapshot |
-| CMTAT_SCHEDULE_ALREADY_SCHEDULED  | This snapshot time is already scheduled                   | SNAPSHOTS      | scheduleSnapshot |
-| CMTAT_RESCHEDULE_AFTER_NEXT | New scheduled is after next scheduled                           | SNAPSHOTS      | rescheduleSnapshot |
-| CMTAT_RESCHEDULE_BEFORE_PREVIOUS  | New scheduled is before previous scheduled                | SNAPSHOTS      | rescheduleSnapshot |
-| CMTAT_SNAPSHOT_ALREADY_DONE | Snapshot already done                                           | SNAPSHOTS      | unscheduleSnapshot, rescheduleSnapshot |
-| CMTAT_NO_SCHEDULED_SNAPSHOT | No scheduled snapshot                                           | SNAPSHOTS      | unscheduleSnapshot |
-| CMTAT_SNAPSHOT_UNKNOWN      | Snapshot not found                                              | SNAPSHOTS      | unscheduleSnapshot |
-| CMTAT_RULE_ENGINE_UNDEFINED | Rule engine not defined                                         | VALIDATION     | ?  |
-| CMTAT_RULE_ENGINE_REFUSED   | NOT_VALIDATED by rule engine                                    | VALIDATION     | assert_validateTransfer |
-| CMTAT_RULE_ENGINE_INVALID   | The pointed rule engine does not have an on-chain view validateTransfer  | VALIDATION   | validateTransfer |
-| CMTAT_ROLE_UNKNOWN_USER     | Unknown user (no role)                                          | AUTHORIZATIONS | revokeRole |
-| CMTAT_ROLE_MISSING          | User do not have this role                                      | AUTHORIZATIONS | revokeRole |
-| CMTAT_ROLE_NOT_RULER        | This user is not allowed to modify rules                        | AUTHORIZATIONS | grantRole, revokeRole |
-| CMTAT_ROLE_NOT_MINTER       | This user is not allowed to mint assets                         | AUTHORIZATIONS | mint |
-| CMTAT_ROLE_NOT_BURNER       | This user is not allowed to burn assets                         | AUTHORIZATIONS | burn |
-| CMTAT_ROLE_NOT_PAUSER       | This user is not allowed to pause the contract                  | AUTHORIZATIONS | pause |
-| CMTAT_ROLE_NOT_VALIDATOR    | This user is not allowed to change rule engine contract address | AUTHORIZATIONS | setRuleEngine |
-| CMTAT_ROLE_NOT_SNAPSHOOTER  | This user is not allowed to schedule snapshots                  | AUTHORIZATIONS | scheduleSnapshot, rescheduleSnapshot,unscheduleSnapshot   |
+| module         |  const                 | message code                | Explanation                                                              | triggered by   |
+|----------------|------------------------|-----------------------------|--------------------------------------------------------------------------|----------------|
+| ADMINISTRATION | not_admin              | CMTAT_NOT_ADMIN             | Not admin                                                                | kill |
+| ADMINISTRATION | contract_in_pause      | CMTAT_CONTRACT_PAUSED       | The contract is paused                                                   | \<all\> |
+| ADMINISTRATION | contract_killed        | CMTAT_CONTRACT_KILLED       | The contract is killed                                                   | \<all\> |
+| TOTALSUPPLY    | not_enough_supply      | CMTAT_TOTALSUPPLY_INSUFFICIENT_BALANCE  | Not enough supply                                            | burn |
+| SNAPSHOTS      | schedule_in_past       | CMTAT_SCHEDULE_IN_PAST      | Cannot schedule in the past                                              | scheduleSnapshot, rescheduleSnapshot |
+| SNAPSHOTS      | before_next_scheduled  | CMTAT_SCHEDULE_BEFORE_NEXT  | Proposed scheduled is before the next scheduled time                     | scheduleSnapshot |
+| SNAPSHOTS      | already_scheduled      | CMTAT_SCHEDULE_ALREADY_SCHEDULED  | This snapshot time is already scheduled                            | scheduleSnapshot |
+| SNAPSHOTS      | rescheduled_after_next | CMTAT_RESCHEDULE_AFTER_NEXT | New scheduled is after next scheduled                                    | rescheduleSnapshot |
+| SNAPSHOTS      | rescheduled_before_previous | CMTAT_RESCHEDULE_BEFORE_PREVIOUS  | New scheduled is before previous scheduled                    | rescheduleSnapshot |
+| SNAPSHOTS      | snapshot_already_done  | CMTAT_SNAPSHOT_ALREADY_DONE | Snapshot already done                                                    | unscheduleSnapshot, rescheduleSnapshot |
+| SNAPSHOTS      | no_snapshot_scheduled  | CMTAT_NO_SCHEDULED_SNAPSHOT | No scheduled snapshot                                                    | unscheduleSnapshot |
+| SNAPSHOTS      | snapshot_not_found     | CMTAT_SNAPSHOT_UNKNOWN      | Snapshot not found                                                       | unscheduleSnapshot |
+| VALIDATION     | undefined_rule_engine  | CMTAT_RULE_ENGINE_UNDEFINED | Rule engine not defined                                                  | ?  |
+| VALIDATION     | refused_by_rule_engine | CMTAT_RULE_ENGINE_REFUSED   | NOT_VALIDATED by rule engine                                             | assert_validateTransfer |
+| VALIDATION     | invalid_rule_engine    | CMTAT_RULE_ENGINE_INVALID   | The pointed rule engine does not have an on-chain view validateTransfer  | validateTransfer |
+| AUTHORIZATIONS | unknown_user           | CMTAT_ROLE_UNKNOWN_USER     | Unknown user (no role)                                                   | revokeRole |
+| AUTHORIZATIONS | missing_role           | CMTAT_ROLE_MISSING          | User do not have this role                                               | revokeRole |
+| AUTHORIZATIONS | not_ruler              | CMTAT_ROLE_NOT_RULER        | This user is not allowed to modify rules                                 | grantRole, revokeRole |
+| AUTHORIZATIONS | not_minter             | CMTAT_ROLE_NOT_MINTER       | This user is not allowed to mint assets                                  | mint |
+| AUTHORIZATIONS | not_burner             | CMTAT_ROLE_NOT_BURNER       | This user is not allowed to burn assets                                  | burn |
+| AUTHORIZATIONS | not_pauser             | CMTAT_ROLE_NOT_PAUSER       | This user is not allowed to pause the contract                           | pause |
+| AUTHORIZATIONS | not_validator          | CMTAT_ROLE_NOT_VALIDATOR    | This user is not allowed to change rule engine contract address          | setRuleEngine |
+| AUTHORIZATIONS | not_snapshooter        | CMTAT_ROLE_NOT_SNAPSHOOTER  | This user is not allowed to schedule snapshots                           | scheduleSnapshot, rescheduleSnapshot,unscheduleSnapshot   |
 
 
 
