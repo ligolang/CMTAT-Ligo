@@ -70,7 +70,10 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       operators      = operators;
       administration = { admin = op1; paused = false; killed = false };
       totalsupplies  = Big_map.literal([(0n, a + b + c)]);
-      authorizations = Big_map.empty;
+      authorizations = {
+        general = Big_map.empty;
+        specific = Big_map.empty;
+      };
       snapshots = {
         account_snapshots = Big_map.empty;
         totalsupply_snapshots = Map.empty;

@@ -61,8 +61,8 @@ let get_initial_storage_ (a, b, c : nat * nat * nat) =
 
   let minter_role : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
   let burner_role : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let profil_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role set =  Set.add minter_role Set.empty in
-  let profil_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role set =  Set.add burner_role Set.empty in
+  // let profil_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role set =  Set.add minter_role Set.empty in
+  // let profil_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role set =  Set.add burner_role Set.empty in
 
   let initial_storage: CMTAT_multi_asset.storage = {
       ledger         = ledger;
@@ -71,7 +71,10 @@ let get_initial_storage_ (a, b, c : nat * nat * nat) =
       operators      = operators;
       administration = { admin = op1; paused = false; killed = false };
       totalsupplies  = Big_map.literal([(1n, a); (2n, a + b); (3n, c)]);
-      authorizations = Big_map.literal([(op2, profil_burner); (op3, profil_minter)]);
+      authorizations = {
+        general = Big_map.empty;
+        specific = Big_map.literal([((op2, 1n, burner_role),()); ((op3, 1n, minter_role), ())]);
+      };
       snapshots = {
         account_snapshots = Big_map.empty;
         totalsupply_snapshots = Map.empty;
@@ -163,23 +166,24 @@ let assert_totalsupply
 //   | Some(_actual) -> failwith "[assert_no_totalsupply] Should not have a total supply for this token_id"
 //   | None -> ()
 
+
 let assert_role
   (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
   (user : address)
+  (token_id_opt: nat option)
   (expected_role: CMTAT_multi_asset.Token.AUTHORIZATIONS.role) =
     let storage = Test.get_storage contract_address in
-    match Big_map.find_opt user storage.authorizations with
-    | Some(flags) -> assert (Set.mem expected_role flags)
-    | None -> failwith "[assert_role] Unknown user"
+    assert(CMTAT_multi_asset.Token.AUTHORIZATIONS.hasRole (user, token_id_opt, expected_role) storage.authorizations)
 
-// let assert_not_role
-//   (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
-//   (user : address)
-//   (expected_role: CMTAT_multi_asset.Token.AUTHORIZATIONS.role) =
-//     let storage = Test.get_storage contract_address in
-//     match Big_map.find_opt user storage.authorizations with
-//     | Some(flags) -> assert (not (Set.mem expected_role flags))
-//     | None -> failwith "[assert_not_role] Unknown user"
+
+let assert_not_role
+  (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
+  (user : address)
+  (token_id_opt: nat option)
+  (expected_role: CMTAT_multi_asset.Token.AUTHORIZATIONS.role) =
+    let storage = Test.get_storage contract_address in
+    assert(not CMTAT_multi_asset.Token.AUTHORIZATIONS.hasRole (user, token_id_opt, expected_role) storage.authorizations)
+
 
 // let assert_no_role
 //   (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
@@ -314,7 +318,6 @@ let string_failure (res : test_exec_result) (expected : string) : unit =
 // //                        SNAPSHOT  VIEWS
 // /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 let test_snapshot_balanceof_view_success_simple_fixed_time =
   let initial_storage, owners, operators = get_initial_storage_at ("2024-01-01t00:00:00Z" : timestamp) (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
@@ -353,14 +356,6 @@ let test_snapshot_balanceof_view_success_simple_fixed_time =
   let _ = Test.transfer_to_contract_exn contr_caller (Request (fa2_address, snapshot_time_0, owner1, 1n)) 0tez in
   let storage_caller = Test.get_storage orig_caller.addr in
   let () = assert(storage_caller = owner1_balance_before_mint) in
-
-  // TIME = "2024-01-01t00:05:06Z"
-  let () = Test.set_source initial_storage.administration.admin in
-  // GRANT op3 the role Minter
-  let contr = Test.to_contract orig.addr in
-  let flag : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
-  let () = assert_role orig.addr op3 flag in
 
   // MINT (with minter)
   let () = Test.set_source op3 in

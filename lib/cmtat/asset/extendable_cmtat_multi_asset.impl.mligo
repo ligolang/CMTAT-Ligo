@@ -2,7 +2,7 @@
 #import "@ligo/fa/lib/main.mligo" "FA2"
 #import "../modules/administration.mligo" "ADMINISTRATION"
 #import "../modules/multi_asset/totalsupply.mligo" "TOTALSUPPLY"
-#import "../modules/authorizations.mligo" "AUTHORIZATIONS"
+#import "../modules/multi_asset/authorizations.mligo" "AUTHORIZATIONS"
 #import "../modules/multi_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 
@@ -151,7 +151,7 @@ let token_metadata (type a) (p : nat) (s : a storage) : FA2.MultiAssetExtendable
 let pause (type a) (p: ADMINISTRATION.pause_param) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, PAUSER) s.authorizations)) AUTHORIZATIONS.Errors.not_pauser in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, None, PAUSER) s.authorizations)) AUTHORIZATIONS.Errors.not_pauser in
     [], { s with administration = ADMINISTRATION.pause p s.administration }
 
 
@@ -166,8 +166,8 @@ type mint_param = {
 let mint (type a)  (p: mint_param) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error (AUTHORIZATIONS.hasRole (sender, MINTER) s.authorizations) AUTHORIZATIONS.Errors.not_minter in
     let { recipient; token_id; amount } = p in
+    let () = assert_with_error (AUTHORIZATIONS.hasRole (sender, Some(token_id), MINTER) s.authorizations) AUTHORIZATIONS.Errors.not_minter in
     let new_snapshots = SNAPSHOTS.update_atomic (None, Some(recipient), amount, token_id) s.ledger s.totalsupplies s.snapshots in
     let new_ledger = FA2.MultiAssetExtendable.increase_token_amount_for_user s.ledger recipient token_id amount in
     let new_total = TOTALSUPPLY.increase_token_total_supply s.totalsupplies token_id amount in
@@ -187,7 +187,7 @@ let burn (type a) (p: burn_param) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let { recipient; token_id; amount } = p in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error (AUTHORIZATIONS.hasRole (sender, BURNER) s.authorizations) AUTHORIZATIONS.Errors.not_burner in
+    let () = assert_with_error (AUTHORIZATIONS.hasRole (sender, Some(token_id), BURNER) s.authorizations) AUTHORIZATIONS.Errors.not_burner in
     let new_snapshots = SNAPSHOTS.update_atomic (Some(recipient), None, amount, token_id) s.ledger s.totalsupplies s.snapshots in
     let new_ledger = FA2.MultiAssetExtendable.decrease_token_amount_for_user s.ledger recipient token_id amount in
     let new_total = TOTALSUPPLY.decrease_token_total_supply s.totalsupplies token_id amount in
@@ -197,36 +197,36 @@ let burn (type a) (p: burn_param) (s: a storage) : a ret =
             snapshots = new_snapshots
         }
 
-let grantRole (type a) (p: address * AUTHORIZATIONS.role) (s: a storage) : a ret =
+let grantRole (type a) (p: address * nat option * AUTHORIZATIONS.role) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, RULER) s.authorizations)) AUTHORIZATIONS.Errors.not_ruler in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, p.1, RULER) s.authorizations)) AUTHORIZATIONS.Errors.not_ruler in
     [], { s with authorizations = AUTHORIZATIONS.grantRole p s.authorizations }
 
 
-let revokeRole (type a) (p: address * AUTHORIZATIONS.role) (s: a storage) : a ret =
+let revokeRole (type a) (p: address * nat option * AUTHORIZATIONS.role) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, RULER) s.authorizations)) AUTHORIZATIONS.Errors.not_ruler in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, p.1, RULER) s.authorizations)) AUTHORIZATIONS.Errors.not_ruler in
     [], { s with authorizations = AUTHORIZATIONS.revokeRole p s.authorizations }
 
 
 let scheduleSnapshot (type a) (p: timestamp) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, None, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
     [], { s with snapshots = SNAPSHOTS.scheduleSnapshot p s.snapshots }
 
 let rescheduleSnapshot (type a) (p: timestamp * timestamp) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, None, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
     [], { s with snapshots = SNAPSHOTS.rescheduleSnapshot p.0 p.1 s.snapshots }
 
 let unscheduleSnapshot (type a) (p: timestamp) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, None, SNAPSHOOTER) s.authorizations)) AUTHORIZATIONS.Errors.not_snapshooter in
     [], { s with snapshots = SNAPSHOTS.unscheduleSnapshot p s.snapshots }
 
 let getNextSnapshots (type a) (s: a storage) : timestamp list =
@@ -244,7 +244,7 @@ let snapshotBalanceOf (type a) (p: timestamp * address * nat) (s: a storage) : n
 let setRuleEngine (type a) (p: VALIDATION.rule_engine_param) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in
-    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, VALIDATOR) s.authorizations)) AUTHORIZATIONS.Errors.not_validator in
+    let () = assert_with_error ((sender = s.administration.admin) || (AUTHORIZATIONS.hasRole (sender, None, VALIDATOR) s.authorizations)) AUTHORIZATIONS.Errors.not_validator in
     [], { s with validation = VALIDATION.set_rule_engine p s.validation }
 
 let kill (type a) (_p: unit) (s: a storage) : a ret =
@@ -258,7 +258,10 @@ let kill (type a) (_p: unit) (s: a storage) : a ret =
       operators      = Big_map.empty;
       administration = { s.administration with paused = true; killed = true };
       totalsupplies  = Big_map.empty;
-      authorizations = Big_map.empty;
+      authorizations = { 
+        general = Big_map.empty;
+        specific = Big_map.empty;
+      };
       snapshots = {
         account_snapshots = Big_map.empty;
         totalsupply_snapshots = Map.empty;

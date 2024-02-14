@@ -2,7 +2,7 @@
 #import "./extendable_cmtat_single_asset.impl.mligo" "CmtatSingleAssetExtendable"
 #import "../modules/administration.mligo" "ADMINISTRATION"
 #import "../modules/single_asset/totalsupply.mligo" "TOTALSUPPLY"
-#import "../modules/authorizations.mligo" "AUTHORIZATIONS"
+#import "../modules/single_asset/authorizations.mligo" "AUTHORIZATIONS"
 #import "../modules/single_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 
