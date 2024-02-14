@@ -221,6 +221,12 @@ The *Authorizations* module provides two functions (`grantRole`, `revokeRole`) t
 
 The *Authorizations* module also provides a function (`hasRole`) to verify if a given user has a given role .
 
+Attention ! Specifically for Multi asset configuration, 
+- MINTER, BURNER, RULER roles are specific to a `token_id` 
+- PAUSER, SNAPSHOOTER, VALIDATOR roles are global (not related to a specific `token_id`). 
+- the RULER role allows to grant/revoke role only on the same `token_id`. 
+
+
 ### Validation
 
 The *Validation* module provides an external mecanism to authorize/unauthorize transfer of asset. 
