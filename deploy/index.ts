@@ -17,14 +17,16 @@ async function main() {
   });
 
   const ledger = new MichelsonMap();
-  ledger.set("tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb", 10);
+  ledger.set("tz1TiFzFCcwjv4pyYGTrnncqgq17p59CzAE2", 100);
 
   const token_metadata = new MichelsonMap();
   const token_info = new MichelsonMap();
-  token_info.set("name", char2Bytes("My custom extended CMTA Token (single asset)"));
-  token_info.set("description", char2Bytes("Lorem ipsum ..."));
+  token_info.set("name", char2Bytes("CMTAT_EXAMPLE"));
+  token_info.set("description", char2Bytes("My custom extended CMTA Token (single asset)"));
   token_info.set("symbol", char2Bytes("XXX"));
   token_info.set("decimals", char2Bytes("0"));
+  token_info.set("ISIN", char2Bytes("US0378331005"));
+  token_info.set("terms", char2Bytes("https://cmta.ch/content/15de282276334fc837b9687a13726ab9/cmtat-functional-specifications-jan-2022-final.pdf"));
 
   token_metadata.set(0, { token_id: 0, token_info });
 
@@ -39,7 +41,7 @@ async function main() {
     "license":{"name":"MIT"},
     "authors":["Frank Hillard<frank.hillard@gmail.com>"],
     "homepage":"",
-    "source":{"tools":["Ligo"], "location":"https://github.com/ligolang/CMTAT-Ligo/lib/main"},
+    "source":{"tools":["Ligo"], "location":"https://github.com/ligolang/CMTAT-Ligo/example"},
     "interfaces":["TZIP-012"],
     "errors":[],
     "views":[]
@@ -54,7 +56,7 @@ async function main() {
     paused : false,
     killed : false 
   };
-  const totalsupplies  = 10;
+  const totalsupplies  = 100;
   const authorizations = new MichelsonMap();
   const snapshots = {
     account_snapshots : new MichelsonMap(),

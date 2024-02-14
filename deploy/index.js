@@ -25,13 +25,15 @@ function main() {
             signer: yield signer_1.InMemorySigner.fromSecretKey("edskS7YYeT85SiRZEHPFjDpCAzCuUaMwYFi39cWPfguovTuNqxU3U9hXo7LocuJmr7hxkesUFkmDJh26ubQGehwXY8YiGXYCvU"),
         });
         const ledger = new taquito_1.MichelsonMap();
-        ledger.set("tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb", 10);
+        ledger.set("tz1TiFzFCcwjv4pyYGTrnncqgq17p59CzAE2", 100);
         const token_metadata = new taquito_1.MichelsonMap();
         const token_info = new taquito_1.MichelsonMap();
-        token_info.set("name", (0, utils_1.char2Bytes)("My custom extended CMTA Token (single asset)"));
-        token_info.set("description", (0, utils_1.char2Bytes)("Lorem ipsum ..."));
+        token_info.set("name", (0, utils_1.char2Bytes)("CMTAT_EXAMPLE"));
+        token_info.set("description", (0, utils_1.char2Bytes)("My custom extended CMTA Token (single asset)"));
         token_info.set("symbol", (0, utils_1.char2Bytes)("XXX"));
         token_info.set("decimals", (0, utils_1.char2Bytes)("0"));
+        token_info.set("ISIN", (0, utils_1.char2Bytes)("US0378331005"));
+        token_info.set("terms", (0, utils_1.char2Bytes)("https://cmta.ch/content/15de282276334fc837b9687a13726ab9/cmtat-functional-specifications-jan-2022-final.pdf"));
         token_metadata.set(0, { token_id: 0, token_info });
         const metadata = new taquito_1.MichelsonMap();
         metadata.set("", (0, utils_1.char2Bytes)("tezos-storage:data"));
@@ -54,7 +56,7 @@ function main() {
             paused: false,
             killed: false
         };
-        const totalsupplies = 10;
+        const totalsupplies = 100;
         const authorizations = new taquito_1.MichelsonMap();
         const snapshots = {
             account_snapshots: new taquito_1.MichelsonMap(),
