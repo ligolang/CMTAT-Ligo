@@ -1,0 +1,17 @@
+{
+    "name": "deploy-cmtat",
+    "version": "1.0.0",
+    "description": "",
+    "scripts": {
+      "start": "tsc && node index.js"
+    },
+    "dependencies": {
+      "@taquito/signer": "^19.0.0",
+      "@taquito/taquito": "^19.0.0",
+      "@taquito/utils": "^19.0.0"
+    },
+    "devDependencies": {
+      "typescript": "^5.2.2"
+    }
+  }
+  

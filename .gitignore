@@ -2,3 +2,4 @@ _ligo/
 .ligo/
 ligo.esy.lock/
 /compiled
+deploy/node_modules

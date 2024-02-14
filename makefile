@@ -36,17 +36,21 @@ compile: ## compile contracts
 clean: ## clean up
 	@rm -rf compiled
 
-# TODO
-# deploy: deploy_deps deploy.js
+compile_example: 
+	@echo "Compiling example contracts..."
+	@if [ ! -d ./compiled/example ]; then mkdir -p ./compiled/example ; fi
+	@$(call compile,../example/extended_cmtat_single_asset.mligo,example/extended_cmtat_single_asset.mligo.json,--michelson-format json)
 
-# deploy.js:
-# 	@echo "Running deploy script\n"
-# 	@cd deploy && npm i && npm start
+deploy: deploy_deps deploy.js
 
-# deploy_deps:
-# 	@echo "Installing deploy script dependencies"
-# 	@cd deploy && npm install
-# 	@echo ""
+deploy.js:
+	@echo "Running deploy script\n"
+	@cd deploy && npm i && npm start
+
+deploy_deps:
+	@echo "Installing deploy script dependencies"
+	@cd deploy && npm install
+	@echo ""
 
 install: ## install dependencies
 	@$(ligo_compiler) install
