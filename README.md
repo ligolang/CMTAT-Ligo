@@ -1,16 +1,9 @@
 # UNDER CONSTRUCTION !! 
 
 TODO list
-
-- rework interface ? burn_param ... 
 - snapshots extra tests for nft ?
-- rework NFT (snapshot, totalsupply) - PR In draft ... relevant ?  
+- rework NFT (snapshot, totalsupply) - PR In draft ... relevant ?
 - optimization (snapshot list search) ?
-
-Other considerations
-
-- should the authorization module take the token_id into account ? a different minter per token_id in a multi asset configuration
-- should the snapshot module update snapshot balance in beforeHookTransfer ? (or afterhooktransfer)
 
 
 # CMTA Token
