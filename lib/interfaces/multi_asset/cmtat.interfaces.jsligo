@@ -1,0 +1,99 @@
+#import "@ligo/fa/lib/fa2/common/tzip12.datatypes.jsligo" "TZIP12Datatypes"
+#import "@ligo/fa/lib/fa2/common/tzip16.datatypes.jsligo" "TZIP16Datatypes"
+#import "cmtat.datatypes.jsligo" "CMTATDatatypes"
+
+export interface CMTAT {
+  /** The ledger stores user<->token ownership
+ * @see storage.ledger
+  **/
+
+  type ledger;
+  /** A group of operators. An operator is a Tezos address that originates token transfer operation on behalf of the owner.
+   * @see storage.operators
+  **/
+
+  type operators;
+  /* Mandatory storage to be recognized as TZIP12 contract*/
+
+  type storage = {
+    extension: unit,
+    administration: CMTATDatatypes.ADMINISTRATION.t,
+    totalsupplies: CMTATDatatypes.TOTALSUPPLY.t,
+    authorizations: CMTATDatatypes.AUTHORIZATIONS.t,
+    snapshots: CMTATDatatypes.SNAPSHOTS.t,
+    validation: CMTATDatatypes.VALIDATION.t,
+    ledger: ledger,
+    operators: operators,
+    token_metadata: TZIP12Datatypes.tokenMetadata,
+    metadata: TZIP16Datatypes.metadata
+  };
+  type ret = [list<operation>, storage];
+
+    
+  @entry
+  const transfer: (t : TZIP12Datatypes.transfer, s : storage) => ret;
+
+  @entry
+  const balance_of: (b : TZIP12Datatypes.balance_of, s : storage) => ret;
+
+  @entry
+  const update_operators: (updates : TZIP12Datatypes.update_operators, s : storage) => ret;
+
+  @view
+  const get_balance: (p : [address, nat], s : storage) => nat;
+
+  @view
+  const total_supply: (token_id : nat, s : storage) => nat;
+
+  @view
+  const all_tokens: (_ : unit, s : storage) => set<nat>;
+
+  @view
+  const is_operator: (op : TZIP12Datatypes.operator, s : storage) => bool;
+
+  @view
+  const token_metadata: (p : nat, s : storage) => TZIP12Datatypes.tokenMetadataData;
+
+  @entry
+  const pause: (p: CMTATDatatypes.ADMINISTRATION.pause_param, s: storage) => ret;
+
+  @entry
+  const mint:  (p: CMTATDatatypes.mint_param, s: storage) => ret;
+
+  @entry
+  const burn: (p: CMTATDatatypes.burn_param, s: storage) => ret;
+
+  @entry
+  const grantRole: (p: [address, option<nat>, CMTATDatatypes.AUTHORIZATIONS.role], s: storage) => ret;
+
+  @entry
+  const revokeRole: (p: [address, option<nat>, CMTATDatatypes.AUTHORIZATIONS.role], s: storage) => ret;
+
+  @entry
+  const scheduleSnapshot: (p: timestamp, s: storage) => ret;
+
+  @entry
+  const rescheduleSnapshot: (p: [timestamp, timestamp], s: storage) => ret;
+
+  @entry
+  const unscheduleSnapshot: (p: timestamp, s: storage) => ret;
+
+  @entry
+  const setRuleEngine: (p: CMTATDatatypes.VALIDATION.rule_engine_param, s: storage) => ret;
+
+  @entry
+  const kill: (_p: unit, s: storage) => ret;
+
+  @view
+  const getNextSnapshots: (_p: unit, s: storage) => list<timestamp>;
+
+  @view
+  const snapshotTotalsupply: (p: [timestamp, nat], s: storage) => nat;
+
+  @view
+  const snapshotBalanceOf: (p: [timestamp, address, nat], s: storage) => nat;
+
+};
+
+
+
