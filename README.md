@@ -1,9 +1,7 @@
 # UNDER CONSTRUCTION !! 
 
 TODO list
-- snapshots extra tests for nft ?
-- rework NFT (snapshot, totalsupply) - PR In draft ... relevant ?
-- optimization (snapshot list search) ?
+- interface jsligo
 
 
 # CMTA Token
@@ -216,7 +214,7 @@ The *Authorizations* module also provides a function (`hasRole`) to verify if a 
 
 Attention ! Specifically for Multi asset configuration, an additonnal mecanism for role specific per `token_id` has been added. Though it is not applied to all roles ! Some roles must not be related to a single `token_id`. 
 - MINTER, BURNER, RULER roles can be specific to a `token_id` 
-- PAUSER, SNAPSHOOTER, VALIDATOR roles are global (cannot not be related to a specific `token_id`). In other words, the fontions (pause, scheduleSnapshot, rescheduleSnapshot, unscheduleSnapshot, SetRuleEngine) expects a global role. For example, a user granted with a SNAPSHOOTER role on token_id 1 will not be able to schedule a snapshot (even on token_id 1) ! 
+- PAUSER, SNAPSHOOTER, VALIDATOR roles are global (cannot not be related to a specific `token_id`). In other words, the fonctions (pause, scheduleSnapshot, rescheduleSnapshot, unscheduleSnapshot, SetRuleEngine) expects a global role. For example, a user granted with a SNAPSHOOTER role on token_id 1 will not be able to schedule a snapshot (even on token_id 1) ! 
 
 
 ### Validation
