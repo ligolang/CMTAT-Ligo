@@ -262,7 +262,7 @@ let kill (type a) (_p: unit) (s: a storage) : a ret =
       authorizations = Big_map.empty;
       snapshots = {
         account_snapshots = Big_map.empty;
-        totalsupply_snapshots = Map.empty;
+        totalsupply_snapshots = Big_map.empty;
         scheduled_snapshots = ([] : timestamp list)
       };
       validation = {
