@@ -10,7 +10,7 @@
 #import "../helpers/rule_engine_wl_contract.mligo" "RULE_ENGINE_WHITELIST"
 
 // alias
-module TZIP12 = CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.TZIP12
+module TZIP12 = CMTAT_multi_asset.Token.TZIP12
 
 
 let get_initial_storage (a, b, c : nat * nat * nat) =
@@ -70,8 +70,6 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
 
   let minter_role : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
   let burner_role : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let profil_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role set =  Set.add minter_role Set.empty in
-  let profil_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role set =  Set.add burner_role Set.empty in
 
   let initial_storage: CMTAT_multi_asset.storage = {
       ledger         = ledger;
@@ -80,7 +78,10 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       operators      = operators;
       administration = { admin = op1; paused = false; killed = false };
       totalsupplies  = Big_map.literal([(1n, a); (2n, a + b); (3n, c)]);
-      authorizations = Big_map.literal([(op2, profil_burner); (op3, profil_minter)]);
+      authorizations = {
+        general = Big_map.empty;
+        specific = Big_map.literal([((op2, 1n, burner_role),()); ((op3, 1n, minter_role), ())]);
+      };
       snapshots = {
         account_snapshots = Big_map.empty;
         totalsupply_snapshots = Map.empty;
@@ -166,28 +167,19 @@ let assert_no_totalsupply
 let assert_role
   (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
   (user : address)
+  (token_id_opt: nat option)
   (expected_role: CMTAT_multi_asset.Token.AUTHORIZATIONS.role) =
     let storage = Test.get_storage contract_address in
-    match Big_map.find_opt user storage.authorizations with
-    | Some(flags) -> assert (Set.mem expected_role flags)
-    | None -> failwith "[assert_role] Unknown user"
+    assert(CMTAT_multi_asset.Token.AUTHORIZATIONS.hasRole (user, token_id_opt, expected_role) storage.authorizations)
+
 
 let assert_not_role
   (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
   (user : address)
+  (token_id_opt: nat option)
   (expected_role: CMTAT_multi_asset.Token.AUTHORIZATIONS.role) =
     let storage = Test.get_storage contract_address in
-    match Big_map.find_opt user storage.authorizations with
-    | Some(flags) -> assert (not (Set.mem expected_role flags))
-    | None -> failwith "[assert_not_role] Unknown user"
-
-let assert_no_role
-  (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
-  (user : address) =
-    let storage = Test.get_storage contract_address in
-    match Big_map.find_opt user storage.authorizations with
-    | Some(_flags) -> failwith "[assert_no_role] User should not have role"
-    | None -> ()
+    assert(not CMTAT_multi_asset.Token.AUTHORIZATIONS.hasRole (user, token_id_opt, expected_role) storage.authorizations)
 
 
 let assert_account_snapshot
@@ -361,7 +353,7 @@ let test_kill_success_with_admin =
 
   // GRANT ROLE - fails
   let flag_snapshooter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
-  let r = Test.transfer orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+  let r = Test.transfer orig.addr (GrantRole (owner1, None, flag_snapshooter)) 0tez in
   let () = string_failure r CMTAT_multi_asset.Token.ADMINISTRATION.Errors.contract_killed in
 
   // TRANSFER - fails
@@ -393,13 +385,13 @@ let test_kill_failure_not_admin =
   let () = Test.set_source initial_storage.administration.admin in
   // GRANT ROLE
   let flag_snapshooter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
-  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, None, flag_snapshooter)) 0tez in
   // GRANT ROLE
   let flag_ruler : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = RULER in
-  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, flag_ruler)) 0tez in
+  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, Some(1n), flag_ruler)) 0tez in
   // GRANT ROLE
   let flag_validator : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = VALIDATOR in
-  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, flag_validator)) 0tez in
+  let _r = Test.transfer_exn orig.addr (GrantRole (owner1, None, flag_validator)) 0tez in
 
   // KILL - fails
   let () = Test.set_source owner1 in
@@ -469,8 +461,8 @@ let test_pause_failure_with_pauser =
   // GRANT op3 the role Pauser
   let contr = Test.to_contract orig.addr in
   let flag : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = PAUSER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
-  let () = assert_role orig.addr op3 flag in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, None, flag)) 0tez in
+  let () = assert_role orig.addr op3 None flag in
   // PAUSE (by op3 fails)
   let () = Test.set_source op3 in
   let r = Test.transfer orig.addr (Pause true) 0tez in
@@ -543,7 +535,7 @@ let test_totalsupply_view_success =
   let fa2_address : address = Tezos.address contr in
   // MINT (with minter)
   let () = Test.set_source op3 in
-  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.mint_param)
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
   let () = assert_balances orig.addr ((owner1, 1n, 12n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
@@ -634,7 +626,7 @@ let test_mint_failure_with_admin =
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
   // MINT (with admin)
   let () = Test.set_source initial_storage.administration.admin in
-  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.mint_param)
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.mint_param)
   in
   let r = Test.transfer orig.addr (Mint mint_request) 0tez in
   let () = string_failure r CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.not_minter in
@@ -655,13 +647,38 @@ let test_mint_success_with_minter =
 
   // MINT (with minter)
   let () = Test.set_source op3 in
-  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.mint_param)
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
   // let () = assert_balances orig.addr ((owner1, 12n), (owner2, 10n), (owner3, 10n)) in
   let () = assert_balances orig.addr ((owner1, 1n, 12n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
   let () = assert_totalsupply orig.addr 1n 12n in
   ()
+
+
+let test_mint_success_with_minter_global =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let _op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+  // GRANT MINTER ROLE GLOBAL
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, None, flag_minter)) 0tez in
+  let () = assert_role addr owner1 None flag_minter in
+  // MINT (with minter)
+  let () = Test.set_source owner1 in
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.mint_param) in
+  let _ = Test.transfer_exn addr (Mint mint_request) 0tez in
+  let () = assert_balances addr ((owner1, 1n, 12n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
+  let () = assert_totalsupply addr 1n 12n in
+  ()
+
 
 let test_mint_failure_not_minter =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
@@ -673,7 +690,7 @@ let test_mint_failure_not_minter =
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
   // MINT (fails with not minter)
-  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.mint_param)
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.mint_param)
   in
   let r = Test.transfer orig.addr (Mint mint_request) 0tez in
   let () = string_failure r CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.not_minter in
@@ -693,7 +710,7 @@ let test_burn_failure_with_admin =
   let () = Test.set_source op1 in
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
   // BURN (with admin)
-  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.burn_param)
+  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.burn_param)
   in
   let r = Test.transfer orig.addr (Burn burn_request) 0tez in
   let () = string_failure r  CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.not_burner in
@@ -713,15 +730,38 @@ let test_burn_success_with_burner =
   // GRANT op3 the role Burner
   let contr = Test.to_contract orig.addr in
   let flag : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, flag)) 0tez in
-  let () = assert_role orig.addr op3 flag in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op3, Some(1n), flag)) 0tez in
+  let () = assert_role orig.addr op3 (Some(1n)) flag in
   // BURN (with burner)
   let () = Test.set_source op3 in
-  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.burn_param)
+  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.burn_param)
   in
   let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
   let () = assert_balances orig.addr ((owner1, 1n, 8n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
   let () = assert_totalsupply orig.addr 1n 8n in
+  ()
+
+let test_burn_success_with_burner_global =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let _op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+  // GRANT BURNER ROLE GLOBAL
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, None, flag_burner)) 0tez in
+  let () = assert_role addr owner1 None flag_burner in
+  // BURN (with burner)
+  let () = Test.set_source owner1 in
+  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.burn_param) in
+  let _ = Test.transfer_exn addr (Burn burn_request) 0tez in
+  let () = assert_balances addr ((owner1, 1n, 8n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
+  let () = assert_totalsupply addr 1n 8n in
   ()
 
 let test_burn_failure_not_burner =
@@ -734,7 +774,7 @@ let test_burn_failure_not_burner =
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
   // BURN (with burner)
   let () = Test.set_source owner1 in
-  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.burn_param)
+  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.burn_param)
   in
   let r = Test.transfer orig.addr (Burn burn_request) 0tez in
   let () = string_failure r  CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.not_burner in
@@ -752,12 +792,13 @@ let test_burn_failure_not_enough =
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
   // BURN (with burner)
   let () = Test.set_source op2 in
-  let burn_request = ({ recipient=owner1; token_id=1n; amount=12n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.burn_param)
+  let burn_request = ({ recipient=owner1; token_id=1n; amount=12n } : CMTAT_multi_asset.Token.burn_param)
   in
   let r = Test.transfer orig.addr (Burn burn_request) 0tez in
   let () = string_failure r  CMTAT_multi_asset.Token.FA2.MultiAssetExtendable.Errors.ins_balance in
   let () = assert_totalsupply orig.addr 1n 10n in
   ()
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -774,8 +815,8 @@ let test_grant_role_success_simple =
   let contr = Test.to_contract addr in
   let () = Test.set_source initial_storage.administration.admin in
   let flag : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag)) 0tez in
-  let () = assert_role addr owner1 flag in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag)) 0tez in
+  let () = assert_role addr owner1 (Some(1n)) flag in
   ()
 
 let test_grant_role_success_with_ruler =
@@ -788,17 +829,40 @@ let test_grant_role_success_with_ruler =
   let () = Test.set_source op1 in
   let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
   let contr = Test.to_contract addr in
-    // GRANT RULER ROLE 
+  // GRANT RULER ROLE 
   let () = Test.set_source initial_storage.administration.admin in
   let flag_ruler : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = RULER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (op2, flag_ruler)) 0tez in
-  let () = assert_role addr op2 flag_ruler in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op2, Some(1n), flag_ruler)) 0tez in
+  let () = assert_role addr op2 (Some(1n)) flag_ruler in
   // GRANT ROLE 
   let () = Test.set_source op2 in
   let flag : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag)) 0tez in
-  let () = assert_role addr owner1 flag in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag)) 0tez in
+  let () = assert_role addr owner1 (Some(1n)) flag in
   ()
+
+let test_grant_role_success_with_ruler_global =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+  // GRANT RULER ROLE GLOBAL
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_ruler : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = RULER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op2, None, flag_ruler)) 0tez in
+  let () = assert_role addr op2 None flag_ruler in
+  // GRANT ROLE 
+  let () = Test.set_source op2 in
+  let flag : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag)) 0tez in
+  let () = assert_role addr owner1 (Some(1n)) flag in
+  ()
+
 
 
 let test_grant_role_success_multiple =
@@ -812,11 +876,11 @@ let test_grant_role_success_multiple =
   let contr = Test.to_contract addr in
   let () = Test.set_source initial_storage.administration.admin in
   let flag_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_minter)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_minter)) 0tez in
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_burner)) 0tez in
-  let () = assert_role addr owner1 flag_minter in
-  let () = assert_role addr owner1 flag_burner in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_burner)) 0tez in
+  let () = assert_role addr owner1 (Some(1n)) flag_minter in
+  let () = assert_role addr owner1 (Some(1n)) flag_burner in
   ()
 
 
@@ -831,9 +895,9 @@ let test_grant_role_failure_not_admin =
   let contr = Test.to_contract addr in
   let () = Test.set_source owner2 in
   let flag_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let r = Test.transfer_to_contract contr (GrantRole (owner1, flag_minter)) 0tez in
+  let r = Test.transfer_to_contract contr (GrantRole (owner1, Some(1n), flag_minter)) 0tez in
   let () = string_failure r CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.not_ruler in
-  let () = assert_no_role addr owner1 in
+  let () = assert_not_role addr owner1 (Some(1n)) flag_minter in
   ()
 
 let test_revoke_role_success_with_admin =
@@ -847,13 +911,13 @@ let test_revoke_role_success_with_admin =
   let contr = Test.to_contract addr in
   let () = Test.set_source initial_storage.administration.admin in
   let flag_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_minter)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_minter)) 0tez in
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_burner)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_burner)) 0tez in
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let _ = Test.transfer_to_contract_exn contr (RevokeRole (owner1, flag_burner)) 0tez in
-  let () = assert_role addr owner1 flag_minter in
-  let () = assert_not_role addr owner1 flag_burner in
+  let _ = Test.transfer_to_contract_exn contr (RevokeRole (owner1, Some(1n), flag_burner)) 0tez in
+  let () = assert_role addr owner1 (Some(1n)) flag_minter in
+  let () = assert_not_role addr owner1 (Some(1n)) flag_burner in
   ()
 
 let test_revoke_role_success_with_ruler =
@@ -869,19 +933,19 @@ let test_revoke_role_success_with_ruler =
   // GRANT RULER ROLE
   let () = Test.set_source initial_storage.administration.admin in
   let flag_ruler : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = RULER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (op2, flag_ruler)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (op2, Some(1n), flag_ruler)) 0tez in
   // GRANT ROLE with RULER
   let () = Test.set_source op2 in
   let flag_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_minter)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_minter)) 0tez in
   // GRANT ROLE with RULER
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_burner)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_burner)) 0tez in
   // REVOKE ROLE with RULER
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let _ = Test.transfer_to_contract_exn contr (RevokeRole (owner1, flag_burner)) 0tez in
-  let () = assert_role addr owner1 flag_minter in
-  let () = assert_not_role addr owner1 flag_burner in
+  let _ = Test.transfer_to_contract_exn contr (RevokeRole (owner1, Some(1n), flag_burner)) 0tez in
+  let () = assert_role addr owner1 (Some(1n)) flag_minter in
+  let () = assert_not_role addr owner1 (Some(1n)) flag_burner in
   ()
 
 let test_revoke_role_failure_not_ruler =
@@ -897,17 +961,17 @@ let test_revoke_role_failure_not_ruler =
   // GRANT ROLE with admin
   let () = Test.set_source initial_storage.administration.admin in
   let flag_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_minter)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_minter)) 0tez in
   // REVOKE ROLE with not RULER - fails
   let () = Test.set_source op2 in
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let r = Test.transfer_to_contract contr (RevokeRole (owner2, flag_burner)) 0tez in
+  let r = Test.transfer_to_contract contr (RevokeRole (owner2, Some(1n), flag_burner)) 0tez in
   let () = string_failure r CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.not_ruler in 
-  let () = assert_role addr owner1 flag_minter in
+  let () = assert_role addr owner1 (Some(1n)) flag_minter in
   ()
 
 
-let test_revoke_role_failure_unknown_user =
+let test_revoke_role_failure_missing_role_wrong_user =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
   let owner2 = List_helper.nth_exn 1 owners in
@@ -918,17 +982,17 @@ let test_revoke_role_failure_unknown_user =
   let contr = Test.to_contract addr in
   let () = Test.set_source initial_storage.administration.admin in
   let flag_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_minter)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_minter)) 0tez in
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_burner)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_burner)) 0tez in
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let r = Test.transfer_to_contract contr (RevokeRole (owner2, flag_burner)) 0tez in
-  let () = string_failure r CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.unknown_user in 
-  let () = assert_role addr owner1 flag_minter in
-  let () = assert_role addr owner1 flag_burner in
+  let r = Test.transfer_to_contract contr (RevokeRole (owner2, Some(1n), flag_burner)) 0tez in
+  let () = string_failure r CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.missing_role in 
+  let () = assert_role addr owner1 (Some(1n)) flag_minter in
+  let () = assert_role addr owner1 (Some(1n)) flag_burner in
   ()
 
-let test_revoke_role_failure_missing_role =
+let test_revoke_role_failure_missing_role_wrong_role =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
   let _owner2 = List_helper.nth_exn 1 owners in
@@ -939,11 +1003,11 @@ let test_revoke_role_failure_missing_role =
   let contr = Test.to_contract addr in
   let () = Test.set_source initial_storage.administration.admin in
   let flag_minter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = MINTER in
-  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_minter)) 0tez in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, Some(1n), flag_minter)) 0tez in
   let flag_burner : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = BURNER in
-  let r = Test.transfer_to_contract contr (RevokeRole (owner1, flag_burner)) 0tez in
+  let r = Test.transfer_to_contract contr (RevokeRole (owner1, Some(1n), flag_burner)) 0tez in
   let () = string_failure r CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.missing_role in 
-  let () = assert_role addr owner1 flag_minter in
+  let () = assert_role addr owner1 (Some(1n)) flag_minter in
   ()
 
 
@@ -965,6 +1029,45 @@ let test_schedule_snapshot_success =
   let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
   ()
+
+let test_schedule_snapshot_success_with_snapshooter =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  // GRANT ROLE SNAPSHOOTER (GLOBAL)
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_snapshooter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
+  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, None, flag_snapshooter)) 0tez in
+  // SCHEDULE SNAPSHOT
+  let () = Test.set_source owner1 in
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+  ()
+
+let test_schedule_snapshot_failure_not_global_snapshooter =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  // GRANT ROLE SNAPSHOOTER (token_id 1n)
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_snapshooter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
+  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, Some(1n), flag_snapshooter)) 0tez in
+  // SCHEDULE SNAPSHOT - fails because need global snapshooter
+  let () = Test.set_source owner1 in
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = string_failure r CMTAT_multi_asset.Token.AUTHORIZATIONS.Errors.not_snapshooter in
+  ()
+
 
 let test_schedule_snapshot_failure_before_next_scheduled =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
@@ -1043,7 +1146,7 @@ let test_mint_with_scheduled_snapshot_success =
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
   // MINT
   let () = Test.set_source op3 in
-  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.mint_param) in
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.mint_param) in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
   let () = assert_account_snapshot orig.addr snapshot_time_0 ((owner1, 1n, 10n), (owner1, 1n, 10n), (owner1, 1n, 10n))in
   let () = assert_totalsupply_snapshot orig.addr snapshot_time_0 1n 10n in
@@ -1065,7 +1168,7 @@ let test_burn_with_scheduled_snapshot_success =
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
 
   let () = Test.set_source op2 in
-  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.burn_param) in
+  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.burn_param) in
   let _ = Test.transfer_exn orig.addr (Burn burn_request) 0tez in
   
   let () = assert_account_snapshot orig.addr snapshot_time_0 ((owner1, 1n, 10n), (owner1, 1n,  10n), (owner1, 1n, 10n))in
@@ -1251,7 +1354,7 @@ let test_unschedule_snapshot_success_with_snapshooter =
 
   let () = Test.set_source initial_storage.administration.admin in
   let flag_snapshooter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
-  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, None, flag_snapshooter)) 0tez in
 
   let () = Test.set_source owner1 in
   let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
@@ -1310,7 +1413,7 @@ let test_unschedule_snapshot_failure_in_past =
 
   let () = Test.set_source initial_storage.administration.admin in
   let flag_snapshooter : CMTAT_multi_asset.Token.AUTHORIZATIONS.role = SNAPSHOOTER in
-  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, None, flag_snapshooter)) 0tez in
 
   let () = Test.set_source owner1 in
   let snapshot_time_0 = ("1970-01-01t00:30:00Z" : timestamp) in
@@ -1395,7 +1498,7 @@ let test_snapshot_totalsupply_view_success =
 
   // MINT
   let () = Test.set_source op3 in
-  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.mint_param)
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
   let () = assert_balances orig.addr ((owner1, 1n, 12n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
@@ -1443,7 +1546,7 @@ let test_snapshot_balanceof_view_success =
 
   // MINT
   let () = Test.set_source op3 in
-  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CMTAT.CMTAT_MULTI_ASSET_EXTENDABLE.mint_param)
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.Token.mint_param)
   in
   let _ = Test.transfer_exn orig.addr (Mint mint_request) 0tez in
   let () = assert_balances orig.addr ((owner1, 1n, 12n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in

@@ -66,7 +66,7 @@ let get_initial_storage_ (a, b, c : nat * nat * nat) =
       token_metadata = token_metadata;
       operators      = operators;
       administration = { admin = op1; paused = false; killed = false };
-      totalsupplies  = a + b + c; //Big_map.literal([(0n, a + b + c)]);
+      totalsupplies  = a + b + c;
       authorizations = Big_map.empty;
       snapshots = {
         account_snapshots = Big_map.empty;

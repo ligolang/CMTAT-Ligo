@@ -46,7 +46,6 @@ let is_operator (op : Token.TZIP12.operator) (s : storage) : bool =
 let token_metadata (p : nat) (s : storage) : Token.TZIP12.tokenMetadataData =
   Token.token_metadata p s
 
-
 // [@entry]
 // let pause (t : Token.ADMINISTRATION.pause_param) (s : storage) : ret =
 //   Token.pause t s
@@ -67,11 +66,11 @@ let burn (p: Token.burn_param) (s: storage) : ret =
   Token.burn p s
 
 [@entry]
-let grantRole (p: address * Token.AUTHORIZATIONS.role) (s: storage) : ret =
+let grantRole (p: address * nat option * Token.AUTHORIZATIONS.role) (s: storage) : ret =
   Token.grantRole p s
 
 [@entry]
-let revokeRole (p: address * Token.AUTHORIZATIONS.role) (s: storage) : ret =
+let revokeRole (p: address * nat option * Token.AUTHORIZATIONS.role) (s: storage) : ret =
   Token.revokeRole p s
 
 [@entry]

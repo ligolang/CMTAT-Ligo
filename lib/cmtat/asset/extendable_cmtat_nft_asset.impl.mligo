@@ -2,7 +2,7 @@
 #import "@ligo/fa/lib/main.mligo" "FA2"
 #import "../modules/administration.mligo" "ADMINISTRATION"
 #import "../modules/nft_asset/totalsupply.mligo" "TOTALSUPPLY"
-#import "../modules/authorizations.mligo" "AUTHORIZATIONS"
+#import "../modules/nft_asset/authorizations.mligo" "AUTHORIZATIONS"
 #import "../modules/nft_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 

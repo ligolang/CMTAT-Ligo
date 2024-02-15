@@ -91,22 +91,15 @@ let get_initial_storage () =
 
   let minter_role : CMTAT_nft_asset.CmtatNftAssetExtendable.AUTHORIZATIONS.role = MINTER in
   let burner_role : CMTAT_nft_asset.CmtatNftAssetExtendable.AUTHORIZATIONS.role = BURNER in
-  let profil_minter : CMTAT_nft_asset.CmtatNftAssetExtendable.AUTHORIZATIONS.role set =  Set.add minter_role Set.empty in
-  let profil_burner : CMTAT_nft_asset.CmtatNftAssetExtendable.AUTHORIZATIONS.role set =  Set.add burner_role Set.empty in
 
   let initial_storage : CMTAT_nft_asset.storage = {
-    // ledger         = ledger;
-    // token_metadata = token_metadata;
-    // operators      = operators;
-    // metadata       = metadata;
-
-    ledger         = ledger;
+      ledger         = ledger;
       metadata       = metadata;
       token_metadata = token_metadata;
       operators      = operators;
       administration = { admin = op1; paused = false; killed = false };
       totalsupplies  = Big_map.literal([(1n, 1n); (2n, 1n); (3n, 1n); (4n, 1n); (5n, 1n)]);
-      authorizations = Big_map.literal([(op2, profil_burner); (op3, profil_minter)]);
+      authorizations = Big_map.literal([((op2, burner_role), ()); ((op3, minter_role), ())]);
       snapshots = {
         account_snapshots = Big_map.empty;
         totalsupply_snapshots = Map.empty;
@@ -192,26 +185,18 @@ let assert_role
   (user : address)
   (expected_role: CMTAT_nft_asset.AUTHORIZATIONS.role) =
     let storage = Test.get_storage contract_address in
-    match Big_map.find_opt user storage.authorizations with
-    | Some(flags) -> assert (Set.mem expected_role flags)
-    | None -> failwith "[assert_role] Unknown user"
+    match Big_map.find_opt (user, expected_role) storage.authorizations with
+    | Some(_) -> assert (true)
+    | None -> assert(false)
 
 let assert_not_role
   (contract_address : ((CMTAT_nft_asset parameter_of), CMTAT_nft_asset.storage) typed_address )
   (user : address)
   (expected_role: CMTAT_nft_asset.AUTHORIZATIONS.role) =
     let storage = Test.get_storage contract_address in
-    match Big_map.find_opt user storage.authorizations with
-    | Some(flags) -> assert (not (Set.mem expected_role flags))
-    | None -> failwith "[assert_not_role] Unknown user"
-
-let assert_no_role
-  (contract_address : ((CMTAT_nft_asset parameter_of), CMTAT_nft_asset.storage) typed_address )
-  (user : address) =
-    let storage = Test.get_storage contract_address in
-    match Big_map.find_opt user storage.authorizations with
-    | Some(_flags) -> failwith "[assert_no_role] User should not have role"
-    | None -> ()
+    match Big_map.find_opt (user, expected_role) storage.authorizations with
+    | Some(_flags) -> assert(false)
+    | None -> assert(true)
 
 
 let assert_account_snapshot
@@ -850,7 +835,7 @@ let test_grant_role_failure_not_ruler =
   let flag_minter : CMTAT_nft_asset.AUTHORIZATIONS.role = MINTER in
   let r = Test.transfer_to_contract contr (GrantRole (owner1, flag_minter)) 0tez in
   let () = string_failure r CMTAT_nft_asset.AUTHORIZATIONS.Errors.not_ruler in
-  let () = assert_no_role addr owner1 in
+  let () = assert_not_role addr owner1 flag_minter in
   ()
 
 let test_revoke_role_success_with_admin =
@@ -923,7 +908,7 @@ let test_revoke_role_failure_not_ruler =
   let () = assert_role addr owner1 flag_minter in
   ()
 
-let test_revoke_role_failure_unknown_user =
+let test_revoke_role_failure_missing_role_wrong_user =
   let initial_storage, owners, operators = get_initial_storage () in
   let owner1 = List_helper.nth_exn 0 owners in
   let owner2 = List_helper.nth_exn 1 owners in
@@ -939,7 +924,7 @@ let test_revoke_role_failure_unknown_user =
   let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, flag_burner)) 0tez in
   let flag_burner : CMTAT_nft_asset.AUTHORIZATIONS.role = BURNER in
   let r = Test.transfer_to_contract contr (RevokeRole (owner2, flag_burner)) 0tez in
-  let () = string_failure r CMTAT_nft_asset.AUTHORIZATIONS.Errors.unknown_user in 
+  let () = string_failure r CMTAT_nft_asset.AUTHORIZATIONS.Errors.missing_role in 
   let () = assert_role addr owner1 flag_minter in
   let () = assert_role addr owner1 flag_burner in
   ()

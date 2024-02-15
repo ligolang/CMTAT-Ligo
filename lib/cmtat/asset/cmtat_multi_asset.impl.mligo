@@ -2,7 +2,7 @@
 #import "./extendable_cmtat_multi_asset.impl.mligo" "CmtatMultiAssetExtendable"
 #import "../modules/administration.mligo" "ADMINISTRATION"
 #import "../modules/multi_asset/totalsupply.mligo" "TOTALSUPPLY"
-#import "../modules/authorizations.mligo" "AUTHORIZATIONS"
+#import "../modules/multi_asset/authorizations.mligo" "AUTHORIZATIONS"
 #import "../modules/multi_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 
@@ -12,7 +12,6 @@ type operator = CmtatMultiAssetExtendable.operator
 
 type operators = CmtatMultiAssetExtendable.operators
 
-//TODO
 // type storage = unit CmtatMultiAssetExtendable.storage
 
 type storage =
@@ -34,7 +33,10 @@ let empty_storage (admin, paused: address * bool): storage =
   {
     administration = { admin=admin; paused=paused; killed = false };
     totalsupplies = Big_map.empty;
-    authorizations = Big_map.empty;
+    authorizations = { 
+        general = Big_map.empty;
+        specific = Big_map.empty;
+    };
     snapshots = 
     {
       account_snapshots = (Big_map.empty : (address, SNAPSHOTS.snapshots) big_map);
@@ -126,11 +128,11 @@ let burn (p: CmtatMultiAssetExtendable.burn_param) (s: storage) : ret =
   unlift (CmtatMultiAssetExtendable.burn p (lift s))
 
 [@entry]
-let grantRole (p: address * CmtatMultiAssetExtendable.AUTHORIZATIONS.role) (s: storage) : ret =
+let grantRole (p: address * nat option * CmtatMultiAssetExtendable.AUTHORIZATIONS.role) (s: storage) : ret =
   unlift (CmtatMultiAssetExtendable.grantRole p (lift s))
 
 [@entry]
-let revokeRole (p: address * CmtatMultiAssetExtendable.AUTHORIZATIONS.role) (s: storage) : ret =
+let revokeRole (p: address * nat option * CmtatMultiAssetExtendable.AUTHORIZATIONS.role) (s: storage) : ret =
   unlift (CmtatMultiAssetExtendable.revokeRole p (lift s))
 
 [@entry]

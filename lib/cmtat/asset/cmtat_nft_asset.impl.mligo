@@ -2,7 +2,7 @@
 #import "./extendable_cmtat_nft_asset.impl.mligo" "CmtatNftAssetExtendable"
 #import "../modules/administration.mligo" "ADMINISTRATION"
 #import "../modules/nft_asset/totalsupply.mligo" "TOTALSUPPLY"
-#import "../modules/authorizations.mligo" "AUTHORIZATIONS"
+#import "../modules/nft_asset/authorizations.mligo" "AUTHORIZATIONS"
 #import "../modules/nft_asset/snapshots.mligo" "SNAPSHOTS"
 #import "../modules/validation.mligo" "VALIDATION"
 
@@ -12,7 +12,6 @@ type operator = CmtatNftAssetExtendable.operator
 
 type operators = CmtatNftAssetExtendable.operators
 
-//TODO
 // type storage = unit CmtatNftAssetExtendable.storage
 
 type storage =
