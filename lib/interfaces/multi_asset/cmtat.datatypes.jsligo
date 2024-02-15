@@ -1,0 +1,54 @@
+export type mint_param = { 
+    recipient : address,
+    token_id : nat,
+    amount : nat
+};
+
+export type burn_param = { 
+    recipient : address,
+    token_id : nat,
+    amount : nat
+};
+
+export namespace ADMINISTRATION {
+    export type pause_param = bool;
+    export type t = {
+        admin : address,
+        paused : bool,
+        killed : bool
+    };
+};
+
+export namespace VALIDATION {
+    export type rule_engine_param = option<address>;
+    export type t = {
+        rule_engine_contract : option<address>
+    };
+};
+
+export namespace TOTALSUPPLY {
+    export type t = big_map<nat, nat>;
+};
+
+export namespace SNAPSHOTS {
+    export type snapshot_data = nat;
+
+    export type snapshots = map<[timestamp, nat], snapshot_data>;
+
+    export type t = {
+        account_snapshots : big_map<address, snapshots>,
+        totalsupply_snapshots : snapshots,
+        scheduled_snapshots : list<timestamp>
+    };
+};
+
+export namespace AUTHORIZATIONS {
+    export type role = | ["MINTER"] | ["BURNER"] | ["PAUSER"] | ["RULER"] | ["VALIDATOR"] | ["SNAPSHOOTER"];
+    export type t = {
+        general : big_map<[address , role], unit>;
+        specific : big_map<[address, nat , role], unit>;
+    };
+    export type grant_role_param = [address, option<nat>, role];
+    export type revoke_role_param = [address, option<nat>, role];
+    export type has_role_param = [address, option<nat>, role];
+};

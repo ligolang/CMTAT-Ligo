@@ -1,9 +1,3 @@
-# UNDER CONSTRUCTION !! 
-
-TODO list
-- interface jsligo
-
-
 # CMTA Token
 
 This repository is an implementation in cameligo of a CMTA token described by the [specifications](https://cmta.ch/content/15de282276334fc837b9687a13726ab9/cmtat-functional-specifications-jan-2022-final.pdf).
