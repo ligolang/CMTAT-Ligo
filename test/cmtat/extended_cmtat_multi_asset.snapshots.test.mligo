@@ -75,7 +75,7 @@ let get_initial_storage_ (a, b, c : nat * nat * nat) =
       };
       snapshots = {
         account_snapshots = Big_map.empty;
-        totalsupply_snapshots = Map.empty;
+        totalsupply_snapshots = Big_map.empty;
         scheduled_snapshots = ([] : timestamp list)
       };
       validation = {
@@ -191,7 +191,6 @@ let assert_not_role
 //     | Some(_flags) -> failwith "[assert_no_role] User should not have role"
 //     | None -> ()
 
-
 let assert_account_snapshot
   (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
   (time: timestamp)
@@ -200,31 +199,16 @@ let assert_account_snapshot
     let (owner2, token_id_2, balance2) = b in
     let (owner3, token_id_3, balance3) = c in
     let storage = Test.get_storage contract_address in
-    let () = match Big_map.find_opt owner1 storage.snapshots.account_snapshots with
-    | Some(snaps) -> 
-        let () = match Map.find_opt (time, token_id_1) snaps with
-        | Some (v) -> assert(balance1 = v)
-        | None -> failwith "Account does not have a snapshot for this time"
-        in
-        ()
+    let () = match Big_map.find_opt (owner1, time, token_id_1) storage.snapshots.account_snapshots with
+    | Some (v) -> assert(balance1 = v)
     | None -> failwith "[assert_account_snapshot] user 1 has no snapshot"
     in
-    let () = match Big_map.find_opt owner2 storage.snapshots.account_snapshots with
-    | Some(snaps) -> 
-        let () = match Map.find_opt (time, token_id_2) snaps with
-        | Some (v) -> assert(balance2 = v)
-        | None -> failwith "Account does not have a snapshot for this time"
-        in
-        ()
+    let () = match Big_map.find_opt (owner2, time, token_id_2) storage.snapshots.account_snapshots with
+    | Some (v) -> assert(balance2 = v)
     | None -> failwith "[assert_account_snapshot] user 2 has no snapshot"
     in
-    let () = match Big_map.find_opt owner3 storage.snapshots.account_snapshots with
-    | Some(snaps) -> 
-        let () = match Map.find_opt (time, token_id_3) snaps with
-        | Some (v) -> assert(balance3= v)
-        | None -> failwith "Account does not have a snapshot for this time"
-        in
-        ()
+    let () = match Big_map.find_opt (owner3, time, token_id_3) storage.snapshots.account_snapshots with
+    | Some (v) -> assert(balance3 = v)
     | None -> failwith "[assert_account_snapshot] user 3 has no snapshot"
     in
     ()

@@ -39,8 +39,8 @@ let empty_storage (admin, paused: address * bool): storage =
     };
     snapshots = 
     {
-      account_snapshots = (Big_map.empty : (address, SNAPSHOTS.snapshots) big_map);
-      totalsupply_snapshots = (Map.empty : SNAPSHOTS.snapshots);
+      account_snapshots = (Big_map.empty : (address * timestamp * nat, nat) big_map);
+      totalsupply_snapshots = (Big_map.empty : SNAPSHOTS.snapshots);
       scheduled_snapshots = ([] : timestamp list)
     };
     validation = {
