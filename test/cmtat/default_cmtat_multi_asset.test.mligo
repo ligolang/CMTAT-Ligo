@@ -643,7 +643,49 @@ let test_mint_success_with_minter =
   let () = assert_totalsupply orig.addr 1n 12n in
   ()
 
+let test_mint_success_with_minter_global =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+  // GRANT MINTER ROLE GLOBAL
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_minter : CMTAT_multi_asset.AUTHORIZATIONS.role = MINTER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, None, flag_minter)) 0tez in
+  let () = assert_role addr owner1 None flag_minter in
+  // MINT (with minter)
+  let () = Test.set_source owner1 in
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CmtatMultiAssetExtendable.mint_param) in
+  let _ = Test.transfer_exn addr (Mint mint_request) 0tez in
+  let () = assert_balances addr ((owner1, 1n, 12n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
+  let () = assert_totalsupply addr 1n 12n in
+  ()
+
+
 let test_mint_failure_not_minter =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  // ORIGINATION
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  // MINT (fails with not minter)
+  let mint_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CmtatMultiAssetExtendable.mint_param)
+  in
+  let r = Test.transfer orig.addr (Mint mint_request) 0tez in
+  let () = string_failure r CMTAT_multi_asset.AUTHORIZATIONS.Errors.not_minter in
+  let () = assert_balances orig.addr ((owner1, 1n, 10n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
+  let () = assert_totalsupply orig.addr 1n 10n in
+  ()
+
+let test_mint_failure_not_specific_minter =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
   let owner2 = List_helper.nth_exn 1 owners in
@@ -704,6 +746,29 @@ let test_burn_success_with_burner =
   let () = assert_totalsupply orig.addr 1n 8n in
   ()
 
+let test_burn_success_with_burner_global =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let owner2 = List_helper.nth_exn 1 owners in
+  let owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let op2    = List_helper.nth_exn 1 operators in
+  let () = Test.set_source op1 in
+  let { addr;code = _code; size = _size}  = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
+  let contr = Test.to_contract addr in
+  // GRANT BURNER ROLE GLOBAL
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_burner : CMTAT_multi_asset.AUTHORIZATIONS.role = BURNER in
+  let _ = Test.transfer_to_contract_exn contr (GrantRole (owner1, None, flag_burner)) 0tez in
+  let () = assert_role addr owner1 None flag_burner in
+  // BURN (with burner)
+  let () = Test.set_source owner1 in
+  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CmtatMultiAssetExtendable.burn_param) in
+  let _ = Test.transfer_exn addr (Burn burn_request) 0tez in
+  let () = assert_balances addr ((owner1, 1n, 8n), (owner2, 2n, 10n), (owner3, 3n, 10n)) in
+  let () = assert_totalsupply addr 1n 8n in
+  ()
+
 let test_burn_failure_not_burner =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
   let owner1 = List_helper.nth_exn 0 owners in
@@ -714,8 +779,7 @@ let test_burn_failure_not_burner =
   let orig = Test.originate (contract_of CMTAT_multi_asset) initial_storage 0tez in
   // BURN (with burner)
   let () = Test.set_source owner1 in
-  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CmtatMultiAssetExtendable.burn_param)
-  in
+  let burn_request = ({ recipient=owner1; token_id=1n; amount=2n } : CMTAT_multi_asset.CmtatMultiAssetExtendable.burn_param) in
   let r = Test.transfer orig.addr (Burn burn_request) 0tez in
   let () = string_failure r  CMTAT_multi_asset.AUTHORIZATIONS.Errors.not_burner in
   let () = assert_totalsupply orig.addr 1n 10n in
