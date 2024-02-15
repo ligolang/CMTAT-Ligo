@@ -144,10 +144,6 @@ let token_metadata (type a) (p : nat) (s : a storage) : FA2.MultiAssetExtendable
     } in
     FA2.MultiAssetExtendable.token_metadata p sub_fa2_storage
 
-
-
-
-
 let pause (type a) (p: ADMINISTRATION.pause_param) (s: a storage) : a ret =
     let () = ADMINISTRATION.assert_not_killed s.administration in
     let sender = Tezos.get_sender() in

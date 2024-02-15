@@ -212,7 +212,7 @@ The *Authorizations* module provides two functions (`grantRole`, `revokeRole`) t
 
 The *Authorizations* module also provides a function (`hasRole`) to verify if a given user has a given role .
 
-Attention ! Specifically for Multi asset configuration, an additonnal mecanism for role specific per `token_id` has been added. Though it is not applied to all roles ! Some roles must not be related to a single `token_id`. 
+ATTENTION ! Specifically for Multi asset configuration, an additonnal mecanism for role specific per `token_id` has been added. Though it is not applied to all roles ! Some roles must not be related to a single `token_id`. 
 - MINTER, BURNER, RULER roles can be specific to a `token_id` 
 - PAUSER, SNAPSHOOTER, VALIDATOR roles are global (cannot not be related to a specific `token_id`). In other words, the fonctions (pause, scheduleSnapshot, rescheduleSnapshot, unscheduleSnapshot, SetRuleEngine) expects a global role. For example, a user granted with a SNAPSHOOTER role on token_id 1 will not be able to schedule a snapshot (even on token_id 1) ! 
 
@@ -251,7 +251,8 @@ The *Snapshots* module keeps track of total supply and account balance at certai
 
 The *Snapshots* module provides the `scheduleSnapshot` function which allows to schedule snapshots (in the future).  
 When the Transfer entrypoint (or Mint Burn) is called it updates the total supply and account balances inside the current snapshot. 
-TODO  ==== This update is done before the execution of the transfer, thus snapshots represents the balance before the transfer is done.
+
+ATTENTION ! This update is done before the execution of the transfer, thus snapshots represents the balance before the transfer is done. This update is also done before `mint` and `burn` fonctions.
 
 The *Snapshots* module provides the `rescheduleSnapshot` function to modify when a snapshot is scheduled (the scheduled snapshots cannot be re-ordered).
 
@@ -259,7 +260,7 @@ The *Snapshots* module provides the `unscheduleSnapshot` function to cancel the 
 
 The *Snapshots* module provides a view `getNextSnapshots` to retrieve the existing scheduled snapshot times (ones not yet done). So the first one is the current snapshot.
 
-The *Snapshots* module also provides views (`snapshotTotalsupply`, `snapshotBalanceOf`)to query the total supply and account balances for a given snapshot time.
+The *Snapshots* module also provides views (`snapshotTotalsupply`, `snapshotBalanceOf`) to query the total supply and account balances for a given snapshot time.
 
 
 
