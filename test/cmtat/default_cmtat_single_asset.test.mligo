@@ -955,6 +955,41 @@ let test_schedule_snapshot_success =
   let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
   ()
 
+let test_schedule_snapshot_success_with_snapshooter =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // GRANT ROLE SNAPSHOOTER (GLOBAL)
+  let () = Test.set_source initial_storage.administration.admin in
+  let flag_snapshooter : CMTAT_single_asset.AUTHORIZATIONS.role = SNAPSHOOTER in
+  let _ = Test.transfer_exn orig.addr (GrantRole (owner1, flag_snapshooter)) 0tez in
+  // SCHEDULE SNAPSHOT
+  let () = Test.set_source owner1 in
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let _r = Test.transfer_exn orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = assert_scheduled_snapshot orig.addr snapshot_time_0 in
+  ()
+
+let test_schedule_snapshot_failure_not_snapshooter =
+  let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
+  let owner1 = List_helper.nth_exn 0 owners in
+  let _owner2 = List_helper.nth_exn 1 owners in
+  let _owner3 = List_helper.nth_exn 2 owners in
+  let op1    = List_helper.nth_exn 0 operators in
+  let () = Test.set_source op1 in
+  let orig = Test.originate (contract_of CMTAT_single_asset) initial_storage 0tez in
+  // SCHEDULE SNAPSHOT - fails because need snapshooter role
+  let () = Test.set_source owner1 in
+  let snapshot_time_0 = ("2024-01-01t00:00:00Z" : timestamp) in
+  let r = Test.transfer orig.addr (ScheduleSnapshot snapshot_time_0) 0tez in
+  let () = string_failure r CMTAT_single_asset.AUTHORIZATIONS.Errors.not_snapshooter in
+  ()
+
+
 let test_schedule_snapshot_failure_before_next_scheduled =
   let initial_storage, owners, operators = get_initial_storage (10n, 10n, 10n) in
   let _owner1 = List_helper.nth_exn 0 owners in
