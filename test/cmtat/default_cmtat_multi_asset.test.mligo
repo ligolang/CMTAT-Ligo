@@ -207,25 +207,6 @@ let assert_account_snapshot
     in
     ()
 
- 
-// let assert_no_account_snapshot
-//   (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
-//   (a, b, c : address * address * address) =
-//     let storage = Test.get_storage contract_address in
-//     let () = match Big_map.find_opt a storage.snapshots.account_snapshots with
-//     | Some(_snaps) -> failwith "Account should not be registered"
-//     | None -> ()
-//     in
-//     let () = match Big_map.find_opt b storage.snapshots.account_snapshots with
-//     | Some(_snaps) -> failwith "Account should not be registered"
-//     | None -> ()
-//     in
-//       let () = match Big_map.find_opt c storage.snapshots.account_snapshots with
-//     | Some(_snaps) -> failwith "Account should not be registered"
-//     | None -> ()
-//     in
-//     ()
-
 let assert_totalsupply_snapshot
   (contract_address : ((CMTAT_multi_asset parameter_of), CMTAT_multi_asset.storage) typed_address )
   (time: timestamp)

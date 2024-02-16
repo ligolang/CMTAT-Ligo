@@ -161,10 +161,8 @@ let snapshotBalanceOf (time : timestamp) (user: address) (_token_id: nat) (ledge
 let update_account_snapshot (current_scheduled_snapshot: timestamp) (account: address) (account_balance: nat) (snapshots: t) : t = 
     let new_account_snapshots = match Big_map.find_opt (account, current_scheduled_snapshot) snapshots.account_snapshots with
     | Some(_snaps) -> 
-        // let new_snaps = Map.update current_scheduled_snapshot (Some(account_balance)) snaps in
         Big_map.update (account, current_scheduled_snapshot) (Some(account_balance)) snapshots.account_snapshots
     | None() -> 
-        // let snaps = Map.literal([(current_scheduled_snapshot, account_balance)]) in
         Big_map.add (account, current_scheduled_snapshot) account_balance snapshots.account_snapshots
     in
     { snapshots with account_snapshots = new_account_snapshots }

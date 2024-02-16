@@ -85,7 +85,7 @@ let get_initial_storage () =
       authorizations = Big_map.literal([((op2, burner_role), ()); ((op3, minter_role), ())]);
       snapshots = {
         account_snapshots = Big_map.empty;
-        totalsupply_snapshots = Map.empty;
+        totalsupply_snapshots = Big_map.empty;
         scheduled_snapshots = ([] : timestamp list)
       };
       validation = {
