@@ -1,13 +1,13 @@
-# Example 
+# How to create and deploy CMTA Tokens 
 
 This section is dedicated to demonstrate how to make a CMTA Token using the `cmtat` library.
 
-## Source code of the example contract (default implementation)
+## Create a CMTA Token (default implementation)
 
 There is no contract to write, you just need to specify the initial storage for your contract. 
 Check section [Deployed Default implementations](#deployed-default-implementations).
 
-## Source code of the example contract (custom implementation)
+## Create a CMTA Token (custom implementation)
 
 The source code of the example contract is available [here](./extended_cmtat_single_asset.mligo)
 
