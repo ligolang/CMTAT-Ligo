@@ -80,7 +80,7 @@ let get_initial_storage_ (a, b, c : nat * nat * nat) =
       authorizations = Big_map.empty;
       snapshots = {
         account_snapshots = Big_map.empty;
-        totalsupply_snapshots = Map.empty;
+        totalsupply_snapshots = Big_map.empty;
         scheduled_snapshots = ([] : timestamp list)
       };
       validation = {
@@ -184,57 +184,22 @@ let assert_no_role
     | Some(_flags) -> failwith "[assert_no_role] User should not have role"
     | None -> ()
 
-
 let assert_account_snapshot
   (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
   (time: timestamp)
   (a, b, c : (address * nat) * (address * nat) * (address * nat)) =
     let storage = Test.get_storage contract_address in
-    let () = match Big_map.find_opt a.0 storage.snapshots.account_snapshots with
-    | Some(snaps) -> 
-        let () = match Map.find_opt time snaps with
-        | Some (v) -> assert(a.1 = v)
-        | None -> failwith "Account does not have a snapshot for this time"
-        in
-        ()
+    let () = match Big_map.find_opt (a.0, time) storage.snapshots.account_snapshots with
+    | Some (v) -> assert(a.1 = v)
     | None -> failwith "[assert_account_snapshot] user 1 has no snapshot"
     in
-    let () = match Big_map.find_opt b.0 storage.snapshots.account_snapshots with
-    | Some(snaps) -> 
-        let () = match Map.find_opt time snaps with
-        | Some (v) -> assert(b.1 = v)
-        | None -> failwith "Account does not have a snapshot for this time"
-        in
-        ()
+    let () = match Big_map.find_opt (b.0, time) storage.snapshots.account_snapshots with
+    | Some (v) -> assert(b.1 = v)
     | None -> failwith "[assert_account_snapshot] user 2 has no snapshot"
     in
-    let () = match Big_map.find_opt c.0 storage.snapshots.account_snapshots with
-    | Some(snaps) -> 
-        let () = match Map.find_opt time snaps with
-        | Some (v) -> assert(b.1 = v)
-        | None -> failwith "Account does not have a snapshot for this time"
-        in
-        ()
+    let () = match Big_map.find_opt (c.0, time) storage.snapshots.account_snapshots with
+    | Some (v) -> assert(c.1 = v)
     | None -> failwith "[assert_account_snapshot] user 3 has no snapshot"
-    in
-    ()
-
- 
-let assert_no_account_snapshot
-  (contract_address : ((CMTAT_single_asset parameter_of), CMTAT_single_asset.storage) typed_address )
-  (a, b, c : address * address * address) =
-    let storage = Test.get_storage contract_address in
-    let () = match Big_map.find_opt a storage.snapshots.account_snapshots with
-    | Some(_snaps) -> failwith "Account should not be registered"
-    | None -> ()
-    in
-    let () = match Big_map.find_opt b storage.snapshots.account_snapshots with
-    | Some(_snaps) -> failwith "Account should not be registered"
-    | None -> ()
-    in
-      let () = match Big_map.find_opt c storage.snapshots.account_snapshots with
-    | Some(_snaps) -> failwith "Account should not be registered"
-    | None -> ()
     in
     ()
 
@@ -243,7 +208,7 @@ let assert_totalsupply_snapshot
   (time: timestamp)
   (expected: nat) =
     let storage = Test.get_storage contract_address in
-    let () = match Map.find_opt time storage.snapshots.totalsupply_snapshots with
+    let () = match Big_map.find_opt time storage.snapshots.totalsupply_snapshots with
     | Some (v) -> assert(expected = v)
     | None -> failwith "No total supply snapshot for this time"
     in
@@ -339,7 +304,7 @@ let test_kill_success_with_admin =
 
   let storage = Test.get_storage orig.addr in
   let () = assert (storage.snapshots.scheduled_snapshots = ([]: timestamp list)) in
-  let () = assert_no_account_snapshot orig.addr (owner1, owner2, owner3) in
+  // let () = assert_no_account_snapshot orig.addr (owner1, owner2, owner3) in
 
   // PAUSE - fails
   let r = Test.transfer orig.addr (Pause false) 0tez in

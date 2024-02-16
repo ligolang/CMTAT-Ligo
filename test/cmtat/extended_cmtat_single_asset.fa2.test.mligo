@@ -72,7 +72,7 @@ let get_initial_storage (a, b, c : nat * nat * nat) =
       authorizations = Big_map.empty;
       snapshots = {
         account_snapshots = Big_map.empty;
-        totalsupply_snapshots = Map.empty;
+        totalsupply_snapshots = Big_map.empty;
         scheduled_snapshots = ([] : timestamp list)
       };
       validation = {

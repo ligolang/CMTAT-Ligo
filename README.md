@@ -1,17 +1,18 @@
 # CMTA Token
 
-This repository is an implementation in cameligo of a CMTA token described by the [specifications](https://cmta.ch/content/15de282276334fc837b9687a13726ab9/cmtat-functional-specifications-jan-2022-final.pdf).
+This repository is a library which proposes an implementation in cameligo of a CMTA token described by the [specifications](https://cmta.ch/content/15de282276334fc837b9687a13726ab9/cmtat-functional-specifications-jan-2022-final.pdf).
 
 It includes features from the basic token standard (TZIP12) and extra features for managing the total supply, for providing snapshots, and granting authorization to other users.
 
-This implementation is architectured as a library which can be used to create a CMTA token. 
+The purpose of this library is to provide a help to create a CMTA token. It provides CMTA features implemented as modules which can be used to designa CMTA Token.
+
 This library is extendable which means that when creating a CMTA token, it is possible to override features and to extend the storage with extra fields. These extra features can rely on extra fields in the storage and thus allow to create custom token with CMTA features and additionnal custom features.
 
-This library relies on the `@ligo/fa` library which implements the TZIP-12 standard features and provides an implementation for fungible single-asset, fungible multi-asset , and non-fungible token. In the same manner the CMTA Token library also supports these 3 kind of tokens.
+This library relies on the `@ligo/fa` library which implements the TZIP-12 standard features and provides an implementation for fungible single-asset, fungible multi-asset , and non-fungible token. In the same manner this CMTA Token library also supports these 3 kind of tokens.
 
 ## How to use this library
 
-Install the library with ligo CLI (with docker)
+Install the library with ligo CLI
 ```
 ligo install cmtat
 ```

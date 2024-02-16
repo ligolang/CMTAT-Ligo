@@ -6,10 +6,10 @@ module TZIP12 = FA2.MultiAssetExtendable.TZIP12
 
 type snapshot_data = nat
 
-type snapshots = ((timestamp * nat), snapshot_data) map
+type snapshots = ((timestamp * nat), snapshot_data) big_map
 
 type t = {
-    account_snapshots : (address, snapshots) big_map;
+    account_snapshots : ((address * timestamp * nat), snapshot_data) big_map;
     totalsupply_snapshots : snapshots;
     scheduled_snapshots : timestamp list
 }
@@ -132,7 +132,7 @@ let getNextSnapshots (snapshots:t) : timestamp list =
 
 // If there is a scheduled snapshot for the given time returns totalsupply of the snapshot otherwise returns the current totalsupply
 let snapshotTotalsupply (time : timestamp) (token_id: nat) (totalsupplies: TOTALSUPPLY.t)  (snapshots:t) : nat =
-    match Map.find_opt (time, token_id) snapshots.totalsupply_snapshots with
+    match Big_map.find_opt (time, token_id) snapshots.totalsupply_snapshots with
     | None -> (match (Big_map.find_opt token_id totalsupplies) with
         | Some(actual) -> actual
         | None -> 0n)
@@ -148,33 +148,32 @@ let get_next_scheduled_snapshot (ref_time: timestamp) (snapshots:t) : timestamp 
 
 // If there is a scheduled snapshot for the given time returns balance of the snapshot otherwise returns the current user balance
 let snapshotBalanceOf (time : timestamp) (user: address) (token_id: nat) (ledger: FA2.MultiAssetExtendable.ledger) (snapshots:t) : nat =
-    match Big_map.find_opt user snapshots.account_snapshots with
-    | None -> get_for_user_curried(ledger, user, token_id)
-    | Some(snaps) -> 
-        let value = match Map.find_opt (time, token_id) snaps with
-        | Some (v) -> v
-        | None -> // search closest scheduled snapshot 
-            (match (get_next_scheduled_snapshot time snapshots) with
-            | None -> get_for_user_curried(ledger, user, token_id)
-            | Some(tt) -> Option.unopt (Map.find_opt (tt, token_id) snaps) )
-        in value
+    match Big_map.find_opt (user, time, token_id) snapshots.account_snapshots with
+    | Some(v) -> v
+    | None -> // search closest scheduled snapshot 
+        (match (get_next_scheduled_snapshot time snapshots) with
+        | None -> get_for_user_curried(ledger, user, token_id)
+        | Some(tt) -> (
+            match (Big_map.find_opt (user, tt, token_id) snapshots.account_snapshots) with
+            | None -> get_for_user_curried(ledger, user, token_id) // nothing registered yet so get current value
+            | Some(v) -> v
+            )
+        )
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //                          UPDATE
 ////////////////////////////////////////////////////////////////////////////////////////
 let update_account_snapshot (current_scheduled_snapshot: timestamp) (token_id: nat) (account: address) (account_balance: nat) (snapshots: t) : t = 
-    let new_account_snapshots = match Big_map.find_opt account snapshots.account_snapshots with
-    | Some(snaps) -> 
-        let new_snaps = Map.update (current_scheduled_snapshot, token_id) (Some(account_balance)) snaps in
-        Big_map.update account (Some(new_snaps)) snapshots.account_snapshots
+    let new_account_snapshots = match Big_map.find_opt (account, current_scheduled_snapshot, token_id) snapshots.account_snapshots with
+    | Some(_v) -> 
+        Big_map.update (account, current_scheduled_snapshot, token_id) (Some(account_balance)) snapshots.account_snapshots
     | None() -> 
-        let snaps = Map.literal([((current_scheduled_snapshot, token_id), account_balance)]) in
-        Big_map.add account snaps snapshots.account_snapshots
+        Big_map.add (account, current_scheduled_snapshot, token_id) account_balance snapshots.account_snapshots
     in
     { snapshots with account_snapshots = new_account_snapshots }
 
 let update_totalsupply_snapshot (current_scheduled_snapshot: timestamp) (token_id: nat) (totalsupply_balance: nat) (snapshots: t) : t = 
-    let new_totalsupply_snapshots = Map.update (current_scheduled_snapshot, token_id) (Some(totalsupply_balance)) snapshots.totalsupply_snapshots in
+    let new_totalsupply_snapshots = Big_map.update (current_scheduled_snapshot, token_id) (Some(totalsupply_balance)) snapshots.totalsupply_snapshots in
     { snapshots with totalsupply_snapshots = new_totalsupply_snapshots }
 
 

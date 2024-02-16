@@ -73,6 +73,7 @@ ifndef SUITE
 	@$(call test,cmtat/extended_cmtat_nft_asset.fa2.test.mligo)
 	@$(call test,cmtat/extended_cmtat_nft_asset.test.mligo)
 ##  @$(call test,fa2/nft/e2e_mutation.test.mligo)
+
 else
 	@$(call test,$(SUITE).test.mligo)
 endif
