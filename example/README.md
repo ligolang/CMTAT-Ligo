@@ -2,7 +2,12 @@
 
 This section is dedicated to demonstrate how to make a CMTA Token using the `cmtat` library.
 
-## Source code of the example contract
+## Source code of the example contract (default implementation)
+
+There is no contract to write, you just need to specify the initial storage for your contract. 
+Check section [Deployed Default implementations](#deployed-default-implementations).
+
+## Source code of the example contract (custom implementation)
 
 The source code of the example contract is available [here](./extended_cmtat_single_asset.mligo)
 
@@ -32,6 +37,23 @@ Once deployed, metadata of the token can be seen with Tzcomet
 TZKT is a Tezos indexer. The contract can be seen [here](https://ghostnet.tzkt.io/KT1AemVzUZmFjTTLDf9D5RukmYKh6qADEtJn/operations/).
 
 BCD is a Tezos indexer which also allows to interact with our [deployed contract](https://better-call.dev/ghostnet/KT1AemVzUZmFjTTLDf9D5RukmYKh6qADEtJn/operations).
+
+## Deployed Default implementations
+
+If you don't need any extension and just want to deploy a default CMTA Token you just need to specify the initial storage in your deployment script. 
+
+An example of the deployment script is provided [here](../deploy/deploy_default_multi.ts) to illustrate how to setup the initial storage and originate the contract. This script for a default multi asset can be deployed with `make deploy_default_multi`. 
+
+Similarly the script for a default single asset [here](../deploy/deploy_default_single.ts) can be triggered with `make deploy_default_single`.
+
+Default implementations have been deployed on Ghostnet.
+
+|  type        | address  |
+|--------------|----------|
+| single asset | KT1MdwUCqHP7op7BnPFEeHvjM2BAjSsEu3uL |
+| multi asset  | KT1HPzQcxUvSim21x3akQUcJoatZgZqf91Zv |
+
+
 
 ## How to implement a custom CMTA Token
 

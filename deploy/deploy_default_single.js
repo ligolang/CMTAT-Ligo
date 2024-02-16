@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const signer_1 = require("@taquito/signer");
 const taquito_1 = require("@taquito/taquito");
 const utils_1 = require("@taquito/utils");
-const extended_cmtat_single_asset_mligo_json_1 = __importDefault(require("../compiled/example/extended_cmtat_single_asset.mligo.json"));
+const cmtat_single_asset_impl_mligo_json_1 = __importDefault(require("../compiled/cmtat/asset/cmtat_single_asset.impl.mligo.json"));
 const RPC_ENDPOINT = "https://ghostnet.tezos.marigold.dev";
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -28,8 +28,8 @@ function main() {
         ledger.set("tz1TiFzFCcwjv4pyYGTrnncqgq17p59CzAE2", 100);
         const token_metadata = new taquito_1.MichelsonMap();
         const token_info = new taquito_1.MichelsonMap();
-        token_info.set("name", (0, utils_1.char2Bytes)("CMTAT_EXAMPLE"));
-        token_info.set("description", (0, utils_1.char2Bytes)("My custom extended CMTA Token (single asset)"));
+        token_info.set("name", (0, utils_1.char2Bytes)("CMTAT_TOKEN_0"));
+        token_info.set("description", (0, utils_1.char2Bytes)("My CMTA Token (single asset)"));
         token_info.set("symbol", (0, utils_1.char2Bytes)("XXX"));
         token_info.set("decimals", (0, utils_1.char2Bytes)("0"));
         token_info.set("ISIN", (0, utils_1.char2Bytes)("US0378331005"));
@@ -38,8 +38,8 @@ function main() {
         const metadata = new taquito_1.MichelsonMap();
         metadata.set("", (0, utils_1.char2Bytes)("tezos-storage:data"));
         metadata.set("data", (0, utils_1.char2Bytes)(`{
-    "name":"CMTAT_TEST",
-    "description":"Example CMTA Token implementation",
+    "name":"CMTAT_DEFAULT_SINGLE",
+    "description":"Example CMTA Token (default single asset configuration)",
     "version":"0.1.0",
     "license":{"name":"MIT"},
     "authors":["Frank Hillard<frank.hillard@gmail.com>"],
@@ -63,14 +63,7 @@ function main() {
             totalsupply_snapshots: new taquito_1.MichelsonMap(),
             scheduled_snapshots: [],
         };
-        // const validation = {
-        //   rule_engine_contract : null
-        // };
         const validation = null;
-        // const extension = {
-        //   issuer : "tz1TiFzFCcwjv4pyYGTrnncqgq17p59CzAE2"
-        // }
-        const extension = "tz1TiFzFCcwjv4pyYGTrnncqgq17p59CzAE2";
         const initialStorage = {
             ledger,
             metadata,
@@ -80,12 +73,11 @@ function main() {
             totalsupplies,
             authorizations,
             snapshots,
-            validation,
-            extension
+            validation
         };
         try {
             const originated = yield Tezos.contract.originate({
-                code: extended_cmtat_single_asset_mligo_json_1.default,
+                code: cmtat_single_asset_impl_mligo_json_1.default,
                 storage: initialStorage,
             });
             console.log(`Waiting for singleAssetContract ${originated.contractAddress} to be confirmed...`);

@@ -22,14 +22,17 @@ compile: ## compile contracts
 	@if [ ! -d ./compiled ]; then mkdir -p ./compiled/cmtat/nft && mkdir -p ./compiled/cmtat/asset ; fi
 	@echo "Compiling contracts..."
 	@$(call compile,cmtat/asset/cmtat_single_asset.impl.mligo,cmtat/asset/cmtat_single_asset.impl.mligo.tz)
+	@$(call compile,cmtat/asset/cmtat_single_asset.impl.mligo,cmtat/asset/cmtat_single_asset.impl.mligo.json,--michelson-format json)
 	@$(call compile,../test/cmtat/extended_cmtat_single_asset.instance.mligo,cmtat/extended_cmtat_single_asset.mligo.tz)
 	@$(call compile,../test/cmtat/extended_cmtat_single_asset.instance.mligo,cmtat/extended_cmtat_single_asset.mligo.json,--michelson-format json)
 
 	@$(call compile,cmtat/asset/cmtat_multi_asset.impl.mligo,cmtat/asset/cmtat_multi_asset.impl.mligo.tz)
+	@$(call compile,cmtat/asset/cmtat_multi_asset.impl.mligo,cmtat/asset/cmtat_multi_asset.impl.mligo.json,--michelson-format json)
 	@$(call compile,../test/cmtat/extended_cmtat_multi_asset.instance.mligo,cmtat/extended_cmtat_multiple_asset.mligo.tz)
 	@$(call compile,../test/cmtat/extended_cmtat_multi_asset.instance.mligo,cmtat/extended_cmtat_multiple_asset.mligo.json,--michelson-format json)
 
 	@$(call compile,cmtat/asset/cmtat_nft_asset.impl.mligo,cmtat/asset/cmtat_nft_asset.impl.mligo.tz)
+	@$(call compile,cmtat/asset/cmtat_nft_asset.impl.mligo,cmtat/asset/cmtat_nft_asset.impl.mligo.json,--michelson-format json)
 	@$(call compile,../test/cmtat/extended_cmtat_nft_asset.instance.mligo,cmtat/extended_cmtat_nft_asset.mligo.tz)
 	@$(call compile,../test/cmtat/extended_cmtat_nft_asset.instance.mligo,cmtat/extended_cmtat_nft_asset.mligo.json,--michelson-format json)
 	@echo "Compiled contracts!"
@@ -43,9 +46,21 @@ compile_example:
 
 deploy: deploy_deps deploy.js
 
+deploy_default_single: deploy_deps deploy_default_single.js
+deploy_default_multi: deploy_deps deploy_default_multi.js
+
+deploy_default_single.js:
+	@echo "Running deploy script (Default Single asset)\n"
+	@cd deploy && npm i && npm run deploy_default_single
+
+deploy_default_multi.js:
+	@echo "Running deploy script (Default Multi asset)\n"
+	@cd deploy && npm i && npm run deploy_default_multi
+
+
 deploy.js:
 	@echo "Running deploy script\n"
-	@cd deploy && npm i && npm start
+	@cd deploy && npm i && npm deploy_example
 
 deploy_deps:
 	@echo "Installing deploy script dependencies"
