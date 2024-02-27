@@ -14,13 +14,13 @@ This library relies on the `@ligo/fa` library which implements the TZIP-12 stand
 
 Install the library with ligo CLI
 ```
-ligo install cmtat
+ligo install @ligo/cmtat
 ```
 This command will add a dependency in a `ligo.json` file. 
 
 Here is an example of the resulting `ligo.json` file.
 ```
-{ "dependencies": { "cmtat": "^1.0.0" } }
+{ "dependencies": { "@ligo/cmtat": "^1.0.0" } }
 ```
 
 Once installed, you can use the cmtat library to create a cmtat token, or design a custom cmtat token by using the modules provided by the library.
