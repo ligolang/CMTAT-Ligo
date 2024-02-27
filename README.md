@@ -53,7 +53,7 @@ The following modules are provided by the library
 
 The library provides an **extendable** implementation which consist on a module that can be aliased for readingness.
 ```
-#import "@cmtat/lib/main.mligo" "CMTAT"
+#import "@ligo/cmtat/lib/main.mligo" "CMTAT"
 module Token = CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE
 ``` 
 Now we can use all sub modules to complete the implementation of the custom CMTA Token.
@@ -67,7 +67,7 @@ For example, the declaration of the `mint` entrypoint can rely on the default im
 The `storage` definition can rely on the one provided by the module. It is an extendable storage which expects a type. (Use `unit` if no extension)
 
 ```
-#import "@cmtat/lib/main.mligo" "CMTAT"
+#import "@ligo/cmtat/lib/main.mligo" "CMTAT"
 
 module Token = CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE
 type storage = unit Token.storage
