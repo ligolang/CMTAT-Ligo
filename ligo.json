@@ -1,5 +1,5 @@
 {
-    "name": "CMTAT-Ligo",
+    "name": "@ligo/cmtat",
     "version": "1.0.0",
     "main": "./lib/main.mligo",
     "description": "CMTA token",

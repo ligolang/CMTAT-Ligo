@@ -14,13 +14,13 @@ This library relies on the `@ligo/fa` library which implements the TZIP-12 stand
 
 Install the library with ligo CLI
 ```
-ligo install cmtat
+ligo install @ligo/cmtat
 ```
 This command will add a dependency in a `ligo.json` file. 
 
 Here is an example of the resulting `ligo.json` file.
 ```
-{ "dependencies": { "cmtat": "^1.0.0" } }
+{ "dependencies": { "@ligo/cmtat": "^1.0.0" } }
 ```
 
 Once installed, you can use the cmtat library to create a cmtat token, or design a custom cmtat token by using the modules provided by the library.
@@ -53,7 +53,7 @@ The following modules are provided by the library
 
 The library provides an **extendable** implementation which consist on a module that can be aliased for readingness.
 ```
-#import "@cmtat/lib/main.mligo" "CMTAT"
+#import "@ligo/cmtat/lib/main.mligo" "CMTAT"
 module Token = CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE
 ``` 
 Now we can use all sub modules to complete the implementation of the custom CMTA Token.
@@ -67,7 +67,7 @@ For example, the declaration of the `mint` entrypoint can rely on the default im
 The `storage` definition can rely on the one provided by the module. It is an extendable storage which expects a type. (Use `unit` if no extension)
 
 ```
-#import "@cmtat/lib/main.mligo" "CMTAT"
+#import "@ligo/cmtat/lib/main.mligo" "CMTAT"
 
 module Token = CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE
 type storage = unit Token.storage

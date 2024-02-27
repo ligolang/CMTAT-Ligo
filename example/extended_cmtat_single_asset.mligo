@@ -1,3 +1,4 @@
+//#import "@ligo/cmtat/lib/main.mligo" "CMTAT"
 #import "../lib/main.mligo" "CMTAT"
 
 module Token = CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE

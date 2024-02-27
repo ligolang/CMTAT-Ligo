@@ -61,7 +61,7 @@ In this section we will give some explanations about the source code of the exam
 
 The library provides an **extendable** implementation which consist on a module that can be aliased for readingness.
 ```
-#import "@cmtat/lib/main.mligo" "CMTAT"
+#import "@ligo/cmtat/lib/main.mligo" "CMTAT"
 module Token = CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE
 ``` 
 Notice that we choose the extendable "Single asset" configuration.
@@ -77,7 +77,7 @@ For example, the declaration of the `mint` entrypoint can rely on the default im
 The `storage` definition can rely on the one provided by the module. It is an extendable storage which expects a type. (Use `unit` if no extension)
 
 ```
-#import "@cmtat/lib/main.mligo" "CMTAT"
+#import "@ligo/cmtat/lib/main.mligo" "CMTAT"
 
 module Token = CMTAT.CMTAT_SINGLE_ASSET_EXTENDABLE
 type storage = unit Token.storage
